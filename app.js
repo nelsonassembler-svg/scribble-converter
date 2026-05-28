@@ -160,6 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Instalar via Config
+  $('btnInstallSettings')?.addEventListener('click', triggerInstall);
+
   // Clear local
   $('btnClearLocal')?.addEventListener('click', () => {
     if (!confirm('Apagar todos os documentos salvos localmente?')) return;
