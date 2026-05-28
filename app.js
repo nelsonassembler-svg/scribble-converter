@@ -1,10 +1,22 @@
+/* ===== SERVICE WORKER ===== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
 /* ===== PWA INSTALL ===== */
 let deferredInstallPrompt = null;
+
+// Mostra botões de instalação sempre (com comportamento inteligente)
+function showInstallButtons() {
+  document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.remove('hidden'));
+}
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.remove('hidden'));
+  showInstallButtons();
   $('installBanner')?.classList.remove('hidden');
 });
 
@@ -15,17 +27,28 @@ window.addEventListener('appinstalled', () => {
   showToast('App instalado com sucesso!');
 });
 
+// Exibe botão sempre — se não tiver prompt nativo, dá instrução manual
+window.addEventListener('load', () => {
+  setTimeout(showInstallButtons, 2500);
+});
+
 async function triggerInstall() {
-  if (!deferredInstallPrompt) {
-    showToast('Use o menu do navegador → "Adicionar à tela inicial"');
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      deferredInstallPrompt = null;
+      document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.add('hidden'));
+      $('installBanner')?.classList.add('hidden');
+    }
     return;
   }
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  if (outcome === 'accepted') {
-    deferredInstallPrompt = null;
-    document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.add('hidden'));
-    $('installBanner')?.classList.add('hidden');
+  // iOS / browsers sem suporte ao prompt
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS) {
+    showToast('No Safari: toque em Compartilhar → "Adicionar à Tela Inicial"');
+  } else {
+    showToast('No Chrome: menu (⋮) → "Adicionar à tela inicial"');
   }
 }
 
