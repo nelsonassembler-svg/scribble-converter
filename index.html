@@ -151,6 +151,38 @@
             <option value="1.0">Máxima</option>
           </select>
         </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">document_scanner</span>
+            <div>
+              <p class="settings-label">Tipo de documento</p>
+              <p class="settings-sub">Ajusta como o OCR interpreta a página</p>
+            </div>
+          </div>
+          <select class="settings-select" id="settingPsm">
+            <option value="6" selected>Texto corrido</option>
+            <option value="4">Coluna única</option>
+            <option value="3">Automático</option>
+            <option value="7">Linha única</option>
+            <option value="8">Palavra única</option>
+            <option value="11">Texto esparso</option>
+          </select>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">contrast</span>
+            <div>
+              <p class="settings-label">Pré-processamento</p>
+              <p class="settings-sub">Melhora contraste antes do OCR</p>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-preprocess="on">Ativo</button>
+            <button class="toggle-btn" data-preprocess="off">Desligado</button>
+          </div>
+        </div>
       </div>
 
       <div class="settings-group">

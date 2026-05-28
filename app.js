@@ -70,10 +70,12 @@ let renamingDoc  = null;    // doc sendo renomeado
 
 /* ===== SETTINGS ===== */
 let settings = {
-  lang:    'por',
-  quality: 0.85,
-  format:  'word',
-  theme:   'dark'
+  lang:       'por',
+  quality:    0.85,
+  format:     'word',
+  theme:      'dark',
+  psm:        '6',
+  preprocess: 'on'
 };
 
 function loadSettings() {
@@ -96,6 +98,11 @@ function applySettings() {
 
   const qualEl = $('settingQuality');
   if (qualEl) qualEl.value = String(settings.quality);
+  const psmEl = $('settingPsm');
+  if (psmEl) psmEl.value = settings.psm;
+  document.querySelectorAll('[data-preprocess]').forEach(b => {
+    b.classList.toggle('active', b.dataset.preprocess === settings.preprocess);
+  });
 
   const fmtEl = $('settingFormat');
   if (fmtEl) fmtEl.value = settings.format;
@@ -137,6 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
   $('settingLang')?.addEventListener('change', e => { settings.lang = e.target.value; saveSettings(); });
   $('settingQuality')?.addEventListener('change', e => { settings.quality = parseFloat(e.target.value); saveSettings(); });
   $('settingFormat')?.addEventListener('change', e => { settings.format = e.target.value; outputMode = e.target.value; saveSettings(); });
+  $('settingPsm')?.addEventListener('change', e => { settings.psm = e.target.value; saveSettings(); });
+  document.querySelectorAll('[data-preprocess]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      settings.preprocess = btn.dataset.preprocess;
+      document.querySelectorAll('[data-preprocess]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      saveSettings();
+    });
+  });
   document.querySelectorAll('[data-theme-btn]').forEach(btn => {
     btn.addEventListener('click', () => {
       settings.theme = btn.dataset.themeBtn;
@@ -306,6 +322,55 @@ document.querySelectorAll('.toggle-btn[data-mode]').forEach(btn => {
   });
 });
 
+/* ===== PRÉ-PROCESSAMENTO DE IMAGEM ===== */
+function preprocessImage(blob) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // Escala para no mínimo 1800px de largura (melhora OCR)
+      const scale = Math.max(1, 1800 / img.naturalWidth);
+      canvas.width  = img.naturalWidth  * scale;
+      canvas.height = img.naturalHeight * scale;
+      const ctx = canvas.getContext('2d');
+
+      // Desenha a imagem escalada
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Filtros de melhoria
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+
+      for (let i = 0; i < d.length; i += 4) {
+        // Escala de cinza
+        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+
+        // Aumento de contraste (fórmula sigmoid)
+        const contrast = 1.8;
+        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+        let enhanced = factor * (gray - 128) + 128;
+        enhanced = Math.max(0, Math.min(255, enhanced));
+
+        // Binarização adaptativa (threshold)
+        const threshold = 140;
+        const binary = enhanced > threshold ? 255 : 0;
+
+        d[i] = d[i+1] = d[i+2] = binary;
+        // d[i+3] = alfa (mantém)
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+
+      canvas.toBlob(processed => {
+        URL.revokeObjectURL(url);
+        resolve(processed);
+      }, 'image/png'); // PNG sem compressão para OCR mais preciso
+    };
+    img.src = url;
+  });
+}
+
 /* ===== OCR ===== */
 $('btnRecognize').addEventListener('click', runOCR);
 
@@ -315,9 +380,15 @@ async function runOCR() {
   $('modalProgress').classList.remove('hidden');
   $('progressFill').style.width = '0%';
   $('progressPct').textContent = '0%';
-  $('progressStatus').textContent = 'Iniciando OCR...';
+  $('progressStatus').textContent = 'Preparando imagem...';
 
   try {
+    // Pré-processa a imagem (se ativado)
+    const processed = settings.preprocess === 'on'
+      ? await preprocessImage(currentImage)
+      : currentImage;
+    $('progressStatus').textContent = 'Iniciando OCR...';
+
     const worker = await Tesseract.createWorker(settings.lang, 1, {
       logger: m => {
         if (m.status === 'recognizing text') {
@@ -330,15 +401,38 @@ async function runOCR() {
         }
       }
     });
-    const { data: { text } } = await worker.recognize(currentImage);
+
+    // Configurações para melhor precisão
+    await worker.setParameters({
+      tessedit_pageseg_mode: settings.psm,
+      preserve_interword_spaces: '1',
+    });
+
+    const { data: { text } } = await worker.recognize(processed);
     await worker.terminate();
-    ocrResult = text.trim();
+
+    // Limpa o texto: remove linhas com só símbolos/ruído
+    ocrResult = cleanOcrText(text);
     $('modalProgress').classList.add('hidden');
     showOcrCard();
   } catch (err) {
     $('modalProgress').classList.add('hidden');
     showToast('Erro no OCR: ' + err.message);
   }
+}
+
+function cleanOcrText(raw) {
+  return raw
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => {
+      if (!l) return false;
+      // Remove linhas com menos de 2 caracteres alfanuméricos
+      const alphaNum = (l.match(/[a-zA-Z0-9À-ÿ]/g) || []).length;
+      return alphaNum >= 2;
+    })
+    .join('\n')
+    .trim();
 }
 
 function showOcrCard() {
