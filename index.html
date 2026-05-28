@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0D1B2A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Scribble Converter</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-icon"><span class="material-icons-round">draw</span></div>
+    <h1>Scribble Converter</h1>
+    <p>Documentos manuscritos em segundos</p>
+    <div class="splash-loader"><div></div></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="material-icons-round topbar-logo-icon">draw</span>
+      <span class="topbar-title">Scribble Converter</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnSearch"><span class="material-icons-round">search</span></button>
+      <button class="icon-btn" id="btnProfile"><span class="material-icons-round">account_circle</span></button>
+    </div>
+  </header>
+
+  <!-- SEARCH BAR -->
+  <div class="search-bar hidden" id="searchBar">
+    <span class="material-icons-round">search</span>
+    <input type="text" id="searchInput" placeholder="Buscar documentos..." />
+    <button class="icon-btn" id="btnCloseSearch"><span class="material-icons-round">close</span></button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ABA: DOCUMENTOS -->
+    <section id="tabDocs" class="tab-section active">
+      <div class="section-header">
+        <h2>Meus Documentos</h2>
+        <span class="badge" id="badgeDocs">0</span>
+        <button class="icon-btn small sync-btn" id="btnSync" title="Sincronizar com nuvem">
+          <span class="material-icons-round">cloud_sync</span>
+        </button>
+      </div>
+
+      <!-- OCR ATIVO -->
+      <div class="ocr-card hidden" id="ocrCard">
+        <div class="ocr-card-header">
+          <span class="material-icons-round">text_snippet</span>
+          <span>Reconhecimento OCR Ativo</span>
+          <button class="icon-btn small" id="btnCloseOcr"><span class="material-icons-round">close</span></button>
+        </div>
+        <div class="ocr-preview" id="ocrPreview"></div>
+        <div class="ocr-name-row">
+          <input type="text" id="ocrDocName" class="name-input" placeholder="Nome do documento..." />
+        </div>
+        <div class="ocr-text" id="ocrText" contenteditable="true" spellcheck="true"></div>
+        <div class="ocr-actions">
+          <button class="btn-outline" id="btnExportWord">
+            <span class="material-icons-round">description</span>Word
+          </button>
+          <button class="btn-outline green" id="btnExportExcel">
+            <span class="material-icons-round">table_chart</span>Excel
+          </button>
+          <button class="btn-outline purple" id="btnShareOcr">
+            <span class="material-icons-round">share</span>Compartilhar
+          </button>
+          <button class="btn-primary" id="btnSaveDoc">
+            <span class="material-icons-round">save</span>Salvar
+          </button>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div id="docList" class="doc-list">
+        <div class="empty-state" id="emptyDocs">
+          <span class="material-icons-round">folder_open</span>
+          <p>Nenhum documento ainda.</p>
+          <p class="sub">Use o botão <strong>+</strong> para escanear.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA: PLANILHAS -->
+    <section id="tabSheets" class="tab-section">
+      <div class="section-header">
+        <h2>Minhas Planilhas</h2>
+        <span class="badge green" id="badgeSheets">0</span>
+      </div>
+      <div id="sheetList" class="doc-list">
+        <div class="empty-state" id="emptySheets">
+          <span class="material-icons-round">table_chart</span>
+          <p>Nenhuma planilha ainda.</p>
+          <p class="sub">Escaneie um documento com números para gerar .xlsx.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA: CONFIGURAÇÕES -->
+    <section id="tabConfig" class="tab-section">
+      <div class="section-header"><h2>Configurações</h2></div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">OCR</div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">translate</span>
+            <div>
+              <p class="settings-label">Idioma do reconhecimento</p>
+              <p class="settings-sub">Idioma principal do documento</p>
+            </div>
+          </div>
+          <select class="settings-select" id="settingLang">
+            <option value="por">Português</option>
+            <option value="eng">Inglês</option>
+            <option value="spa">Espanhol</option>
+            <option value="fra">Francês</option>
+            <option value="deu">Alemão</option>
+          </select>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">hd</span>
+            <div>
+              <p class="settings-label">Qualidade da imagem</p>
+              <p class="settings-sub">Maior qualidade = OCR mais preciso</p>
+            </div>
+          </div>
+          <select class="settings-select" id="settingQuality">
+            <option value="0.7">Econômica</option>
+            <option value="0.85" selected>Padrão</option>
+            <option value="0.95">Alta</option>
+            <option value="1.0">Máxima</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Aparência</div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">dark_mode</span>
+            <div>
+              <p class="settings-label">Tema</p>
+              <p class="settings-sub">Aparência do aplicativo</p>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-theme-btn="dark">Escuro</button>
+            <button class="toggle-btn" data-theme-btn="light">Claro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Exportação</div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">description</span>
+            <div>
+              <p class="settings-label">Formato padrão</p>
+              <p class="settings-sub">Tipo de arquivo ao salvar</p>
+            </div>
+          </div>
+          <select class="settings-select" id="settingFormat">
+            <option value="word">Word (.docx)</option>
+            <option value="excel">Excel (.xlsx)</option>
+          </select>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">calendar_today</span>
+            <div>
+              <p class="settings-label">Formato de data</p>
+              <p class="settings-sub">Como as datas aparecem</p>
+            </div>
+          </div>
+          <span class="settings-value">DD/MM/AAAA</span>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <span class="material-icons-round">attach_money</span>
+            <div>
+              <p class="settings-label">Moeda</p>
+              <p class="settings-sub">Moeda padrão nos documentos</p>
+            </div>
+          </div>
+          <span class="settings-value">R$ (Real)</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Dados</div>
+
+        <div class="settings-item clickable" id="btnClearLocal">
+          <div class="settings-item-info">
+            <span class="material-icons-round" style="color:var(--red)">delete_sweep</span>
+            <div>
+              <p class="settings-label" style="color:var(--red)">Limpar dados locais</p>
+              <p class="settings-sub">Remove todos os documentos salvos localmente</p>
+            </div>
+          </div>
+          <span class="material-icons-round settings-arrow">chevron_right</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RODAPÉ NAS ABAS PRINCIPAIS -->
+    <div class="dev-footer" id="devFooter">
+      <span class="material-icons-round dev-footer-icon">draw</span>
+      <p class="dev-footer-app">Scribble Converter</p>
+      <p class="dev-footer-label">Desenvolvido por:</p>
+      <p class="dev-footer-name">Nelson Tomaz Catunda Magalhães</p>
+      <a class="dev-footer-email" href="mailto:nelsonassembrer@gmail.com">nelsonassembrer@gmail.com</a>
+      <p class="dev-footer-copy">© Todos os direitos reservados</p>
+      <button class="btn-install-footer hidden" id="btnInstallFooter2">
+        <span class="material-icons-round">install_mobile</span>
+        Instalar no celular
+      </button>
+    </div>
+
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" id="fabScan"><span class="material-icons-round">document_scanner</span></button>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="tabDocs">
+      <span class="material-icons-round">description</span><span>Documentos</span>
+    </button>
+    <button class="nav-item" data-tab="tabSheets">
+      <span class="material-icons-round">table_chart</span><span>Planilhas</span>
+    </button>
+    <button class="nav-item" data-tab="tabConfig">
+      <span class="material-icons-round">settings</span><span>Config.</span>
+    </button>
+    <button class="nav-item" id="navProfile" data-tab="tabProfile">
+      <span class="material-icons-round">person</span><span>Perfil</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- MODAL: ESCANEAR -->
+<div class="modal-overlay hidden" id="modalScan">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 class="modal-title">Escanear Documento</h3>
+    <p class="modal-sub">Capture ou envie uma foto do documento manuscrito</p>
+    <div class="scan-preview-area" id="scanPreviewArea">
+      <video id="cameraStream" autoplay playsinline class="hidden"></video>
+      <canvas id="cameraCanvas" class="hidden"></canvas>
+      <img id="previewImg" class="hidden" alt="preview" />
+      <div class="scan-placeholder" id="scanPlaceholder">
+        <span class="material-icons-round">image_search</span>
+        <p>Nenhuma imagem selecionada</p>
+      </div>
+    </div>
+    <div class="scan-options">
+      <button class="scan-opt-btn" id="btnCamera">
+        <span class="material-icons-round">photo_camera</span>Câmera
+      </button>
+      <button class="scan-opt-btn" id="btnUpload">
+        <span class="material-icons-round">upload_file</span>Galeria
+      </button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden" />
+    <input type="file" id="galleryInput" accept="image/*" class="hidden" />
+    <div class="scan-mode-row">
+      <span class="modal-label">Tipo de saída:</span>
+      <div class="toggle-group">
+        <button class="toggle-btn active" data-mode="word">Word (.docx)</button>
+        <button class="toggle-btn" data-mode="excel">Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelScan">Cancelar</button>
+      <button class="btn-primary large" id="btnRecognize" disabled>
+        <span class="material-icons-round">auto_fix_high</span>Reconhecer Texto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROGRESSO OCR -->
+<div class="modal-overlay hidden" id="modalProgress">
+  <div class="modal-center">
+    <div class="progress-icon">
+      <span class="material-icons-round spinning">auto_fix_high</span>
+    </div>
+    <h3>Reconhecendo texto...</h3>
+    <p id="progressStatus">Iniciando OCR</p>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <p class="progress-pct" id="progressPct">0%</p>
+  </div>
+</div>
+
+<!-- MODAL: VISUALIZAR DOCUMENTO -->
+<div class="modal-overlay hidden" id="modalView">
+  <div class="modal-sheet tall">
+    <div class="modal-handle"></div>
+    <div class="modal-view-header">
+      <div class="modal-view-title-row">
+        <div class="doc-icon word" id="viewDocIcon">
+          <span class="material-icons-round">description</span>
+        </div>
+        <div class="modal-view-title-info">
+          <p class="modal-view-name" id="viewDocName">Documento</p>
+          <p class="modal-view-meta" id="viewDocMeta"></p>
+        </div>
+      </div>
+      <div class="modal-view-actions">
+        <button class="icon-btn" id="btnViewRename" title="Renomear">
+          <span class="material-icons-round">edit</span>
+        </button>
+        <button class="icon-btn" id="btnViewShare" title="Compartilhar">
+          <span class="material-icons-round">share</span>
+        </button>
+        <button class="icon-btn" id="btnViewExport" title="Exportar">
+          <span class="material-icons-round">download</span>
+        </button>
+        <button class="icon-btn" id="btnCloseView" title="Fechar">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+    </div>
+    <div class="view-text-box" id="viewDocText"></div>
+    <div class="modal-footer" style="margin-top:12px">
+      <button class="btn-outline" id="btnViewExportWord">
+        <span class="material-icons-round">description</span>Word
+      </button>
+      <button class="btn-outline green" id="btnViewExportExcel">
+        <span class="material-icons-round">table_chart</span>Excel
+      </button>
+      <button class="btn-primary" id="btnViewShareFull">
+        <span class="material-icons-round">share</span>Compartilhar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RENOMEAR -->
+<div class="modal-overlay hidden" id="modalRename">
+  <div class="modal-center">
+    <h3 style="margin-bottom:16px">Renomear documento</h3>
+    <input type="text" id="renameInput" class="rename-field" placeholder="Novo nome..." />
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn-ghost" id="btnCancelRename">Cancelar</button>
+      <button class="btn-primary" id="btnConfirmRename">
+        <span class="material-icons-round">check</span>Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PERFIL / LOGIN -->
+<div class="modal-overlay hidden" id="modalProfile">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 class="modal-title" id="profileTitle">Entrar</h3>
+    <div id="authForm">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="authEmail" placeholder="seu@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="authPassword" placeholder="••••••••" />
+      </div>
+      <p class="auth-error hidden" id="authError"></p>
+      <div class="modal-footer stack">
+        <button class="btn-primary large" id="btnLogin">
+          <span class="material-icons-round">login</span>Entrar
+        </button>
+        <button class="btn-ghost" id="btnRegister">Criar conta</button>
+        <button class="btn-ghost" id="btnCancelProfile">Fechar</button>
+      </div>
+    </div>
+    <div id="userPanel" class="hidden">
+      <div class="user-info-card">
+        <span class="material-icons-round user-avatar">account_circle</span>
+        <div>
+          <p class="user-email" id="userEmail"></p>
+          <p class="user-since">Membro desde <span id="userSince"></span></p>
+        </div>
+      </div>
+      <div class="user-stats">
+        <div class="stat-item">
+          <span class="stat-val" id="statDocs">0</span>
+          <span class="stat-lbl">Documentos</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-val" id="statSheets">0</span>
+          <span class="stat-lbl">Planilhas</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-val" id="statCloud">
+            <span class="material-icons-round" style="font-size:20px">cloud_off</span>
+          </span>
+          <span class="stat-lbl">Nuvem</span>
+        </div>
+      </div>
+      <button class="btn-outline sync-full-btn" id="btnSyncCloud">
+        <span class="material-icons-round">cloud_sync</span>Sincronizar com nuvem
+      </button>
+      <div class="modal-footer stack" style="margin-top:12px">
+        <button class="btn-ghost danger" id="btnLogout">
+          <span class="material-icons-round">logout</span>Sair
+        </button>
+        <button class="btn-ghost" id="btnCloseProfile">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BANNER INSTALAR PWA -->
+<div class="install-banner hidden" id="installBanner">
+  <div class="install-banner-left">
+    <span class="material-icons-round">install_mobile</span>
+    <div>
+      <strong>Instalar no celular</strong>
+      <p>Acesse o app direto da tela inicial</p>
+    </div>
+  </div>
+  <div class="install-banner-right">
+    <button class="btn-primary" id="btnInstallConfirm">Instalar</button>
+    <button class="icon-btn small" id="btnInstallDismiss">
+      <span class="material-icons-round">close</span>
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8/build/index.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
