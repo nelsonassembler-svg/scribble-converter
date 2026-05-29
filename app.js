@@ -7,7 +7,7 @@ if ('serviceWorker' in navigator) {
 const STRIPE_PK = 'pk_live_51SiipcR5OonznFInqbNzaUxI3bHwqshMFjSHXmYJx3YsDMymr72zKKqtZcHpidAjqP20K5rSUVdwqa8IFFzpj3Ml00D9Y3PpxX';
 // Links de pagamento criados no Stripe Dashboard:
 const STRIPE_LINK_MONTHLY = 'https://buy.stripe.com/8x2dRbbjJ7rw66K9dHgIo03';
-const STRIPE_LINK_ANNUAL  = 'https://buy.stripe.com/LINK_ANUAL';  // aguardando link anual
+const STRIPE_LINK_ANNUAL  = 'https://buy.stripe.com/14A3cxfzZcLQcv889DgIo04';
 const ADMIN_EMAIL = 'nelsontcmagalhaes@gmail.com';
 
 /* ===== CONFIG SUPABASE ===== */
