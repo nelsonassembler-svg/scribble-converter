@@ -2,7 +2,7 @@
   "name": "Scribble Converter",
   "short_name": "Scribble",
   "description": "Digitalize documentos manuscritos e exporte para Word e Excel",
-  "start_url": "/scribble-converter/",
+  "start_url": "/scribble-converter/index.html",
   "scope": "/scribble-converter/",
   "display": "standalone",
   "background_color": "#0D1B2A",
@@ -10,19 +10,31 @@
   "orientation": "portrait-primary",
   "lang": "pt-BR",
   "categories": ["productivity", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/scribble-converter/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/scribble-converter/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/scribble-converter/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/scribble-converter/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "prefer_related_applications": false
+  ]
 }

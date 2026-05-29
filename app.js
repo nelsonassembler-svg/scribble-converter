@@ -133,21 +133,36 @@ window.addEventListener('appinstalled', () => {
 
 window.addEventListener('load', () => setTimeout(showInstallButtons, 2500));
 
+function openInstallGuide() {
+  // Ajusta o botão "Instalar agora" conforme disponibilidade
+  const btn = $('btnInstallNow');
+  if (btn) {
+    if (deferredInstallPrompt) {
+      btn.classList.remove('hidden');
+      btn.innerHTML = '<span class="material-icons-round">install_mobile</span>Instalar agora';
+    } else {
+      btn.classList.add('hidden');
+    }
+  }
+  $('modalInstallGuide').classList.remove('hidden');
+}
+
 async function triggerInstall() {
   if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    if (outcome === 'accepted') {
-      deferredInstallPrompt = null;
-      document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.add('hidden'));
-      $('installBanner')?.classList.add('hidden');
-    }
+    $('modalInstallGuide')?.classList.add('hidden');
+    $('installBanner')?.classList.add('hidden');
+    try {
+      await deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        deferredInstallPrompt = null;
+        showToast('App instalado com sucesso! 🎉');
+      }
+    } catch {}
     return;
   }
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  showToast(isIOS
-    ? 'No Safari: toque em Compartilhar → "Adicionar à Tela Inicial"'
-    : 'No Chrome: menu (⋮) → "Adicionar à tela inicial"');
+  // Sem prompt nativo → abre guia
+  openInstallGuide();
 }
 
 /* ===== INIT ===== */
@@ -161,16 +176,33 @@ window.addEventListener('load', async () => {
       $('splash').classList.add('hidden');
       $('app').classList.remove('hidden');
       loadDocs();
+      // Mostra tutorial na primeira visita
+      if (!localStorage.getItem('scribble_onboarded')) {
+        setTimeout(() => {
+          $('modalHelp').classList.remove('hidden');
+          localStorage.setItem('scribble_onboarded', '1');
+        }, 600);
+      }
     }, 500);
   }, 1800);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Install
-  document.querySelectorAll('.btn-install-footer').forEach(b => b.addEventListener('click', triggerInstall));
+  // Ajuda
+  $('btnHelp')?.addEventListener('click',         () => $('modalHelp').classList.remove('hidden'));
+  $('btnCloseHelp')?.addEventListener('click',    () => $('modalHelp').classList.add('hidden'));
+  $('btnHelpSettings')?.addEventListener('click', () => $('modalHelp').classList.remove('hidden'));
+  $('modalHelp')?.addEventListener('click', e => { if (e.target === $('modalHelp')) $('modalHelp').classList.add('hidden'); });
+
+  // Install guia
+  $('btnInstallSettings')?.addEventListener('click', openInstallGuide);
+  $('btnInstallNow')?.addEventListener('click', triggerInstall);
+  $('btnCloseInstallGuide')?.addEventListener('click', () => $('modalInstallGuide').classList.add('hidden'));
+  $('modalInstallGuide')?.addEventListener('click', e => { if (e.target === $('modalInstallGuide')) $('modalInstallGuide').classList.add('hidden'); });
+
+  // Install banner
   $('btnInstallConfirm')?.addEventListener('click', triggerInstall);
   $('btnInstallDismiss')?.addEventListener('click', () => $('installBanner').classList.add('hidden'));
-  $('btnInstallSettings')?.addEventListener('click', triggerInstall);
 
   // Settings
   $('settingLang')?.addEventListener('change',    e => { settings.lang    = e.target.value;           saveSettings(); });

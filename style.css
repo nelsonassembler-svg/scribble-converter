@@ -863,6 +863,70 @@ html, body {
 .user-plan-label.premium { color: #AB47BC; }
 .user-plan-label.admin   { color: gold; }
 
+/* ===== HELP / TUTORIAL ===== */
+.help-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px;
+}
+.help-icon {
+  font-size: 28px !important;
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: #fff;
+}
+.help-steps {
+  display: flex; flex-direction: column; gap: 0;
+  max-height: 60vh; overflow-y: auto;
+  padding-right: 4px;
+}
+.help-steps::-webkit-scrollbar { width: 3px; }
+.help-steps::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+.help-step {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.help-step:last-of-type { border-bottom: none; }
+
+.step-num {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-light));
+  color: #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.step-desc  { font-size: 13px; color: var(--white-70); line-height: 1.6; }
+.step-desc em { color: var(--white-40); }
+
+.help-tip {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,180,0,.08);
+  border: 1px solid rgba(255,180,0,.2);
+  border-radius: var(--radius-sm);
+  padding: 14px; margin-top: 8px;
+  font-size: 13px; color: var(--white-70);
+}
+.help-tip .material-icons-round { color: #FFB400; flex-shrink: 0; font-size: 20px; margin-top: 2px; }
+.help-tip strong { color: var(--white); display: block; margin-bottom: 6px; }
+.help-tip ul { padding-left: 16px; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+
+/* ===== INSTALL GUIDE ===== */
+.install-os-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: var(--blue-glow);
+  margin: 16px 0 8px;
+}
+.install-os-title .material-icons-round { font-size: 20px; }
+.install-divider {
+  height: 1px; background: var(--border);
+  margin: 16px 0 4px;
+}
+
 /* ===== INSTALL BANNER ===== */
 .install-banner {
   position: fixed;

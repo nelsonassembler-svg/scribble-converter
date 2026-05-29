@@ -38,6 +38,7 @@
         <span class="material-icons-round">workspace_premium</span>
         <span id="planChipLabel">Premium</span>
       </div>
+      <button class="icon-btn" id="btnHelp" title="Ajuda"><span class="material-icons-round">help_outline</span></button>
       <button class="icon-btn" id="btnSearch"><span class="material-icons-round">search</span></button>
       <button class="icon-btn" id="btnProfile"><span class="material-icons-round">account_circle</span></button>
     </div>
@@ -339,7 +340,18 @@
             <span class="material-icons-round" style="color:var(--accent)">install_mobile</span>
             <div>
               <p class="settings-label">Instalar no celular</p>
-              <p class="settings-sub">Adicione o app à tela inicial</p>
+              <p class="settings-sub">Guia passo a passo para Android e iPhone</p>
+            </div>
+          </div>
+          <span class="material-icons-round settings-arrow">chevron_right</span>
+        </div>
+
+        <div class="settings-item clickable" id="btnHelpSettings">
+          <div class="settings-item-info">
+            <span class="material-icons-round" style="color:var(--blue-glow)">menu_book</span>
+            <div>
+              <p class="settings-label">Como usar o app</p>
+              <p class="settings-sub">Tutorial passo a passo completo</p>
             </div>
           </div>
           <span class="material-icons-round settings-arrow">chevron_right</span>
@@ -642,6 +654,136 @@
       <button class="btn-ghost" id="btnCancelPayment">Cancelar</button>
     </div>
     <p class="stripe-security"><span class="material-icons-round">lock</span>Pagamento seguro via Stripe</p>
+  </div>
+</div>
+
+<!-- MODAL: AJUDA / TUTORIAL -->
+<div class="modal-overlay hidden" id="modalHelp">
+  <div class="modal-sheet tall">
+    <div class="modal-handle"></div>
+    <div class="help-header">
+      <span class="material-icons-round help-icon">menu_book</span>
+      <h3 class="modal-title" style="margin:0">Como usar o Scribble Converter</h3>
+    </div>
+
+    <div class="help-steps">
+
+      <div class="help-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Crie sua conta</p>
+          <p class="step-desc">Toque em <strong>Perfil</strong> → <strong>Criar conta</strong>. Insira seu e-mail e senha, aceite a Política de Privacidade e pronto. O login guarda seus documentos na nuvem.</p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Escaneie um documento</p>
+          <p class="step-desc">Toque no botão <strong>azul</strong> (câmera) no canto inferior direito. Escolha <strong>Câmera</strong> para fotografar ou <strong>Galeria</strong> para enviar uma imagem já salva.</p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Escolha o tipo de saída</p>
+          <p class="step-desc">Antes de reconhecer, selecione <strong>Word (.docx)</strong> para textos corridos ou <strong>Excel (.xlsx)</strong> para documentos com números e tabelas.</p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Reconheça o texto</p>
+          <p class="step-desc">Toque em <strong>"Reconhecer Texto"</strong>. O OCR processa a imagem, melhora o contraste automaticamente e extrai o texto manuscrito ou impresso.</p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <p class="step-title">Edite e exporte</p>
+          <p class="step-desc">O texto aparece editável. Corrija se necessário, dê um nome ao documento e toque em <strong>Exportar para Word</strong> ou <strong>Excel</strong>. O arquivo é baixado direto no celular. <em>(Requer plano Premium)</em></p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <p class="step-title">Salve na nuvem</p>
+          <p class="step-desc">Toque em <strong>Salvar</strong> para guardar o documento na nuvem (Supabase). Acesse de qualquer dispositivo fazendo login. <em>(Requer plano Premium)</em></p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <p class="step-title">Compartilhe</p>
+          <p class="step-desc">Toque em <strong>Compartilhar</strong> para enviar o texto via WhatsApp, e-mail ou copiar para a área de transferência. Disponível em todos os planos.</p>
+        </div>
+      </div>
+
+      <div class="help-step">
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <p class="step-title">Assine o Premium</p>
+          <p class="step-desc">Visitantes têm <strong>5 scans/mês</strong> e não podem exportar. Assine o <strong>Premium (R$ 19,90/mês)</strong> ou <strong>Anual (R$ 167,00)</strong> para uso ilimitado.</p>
+        </div>
+      </div>
+
+      <div class="help-tip">
+        <span class="material-icons-round">lightbulb</span>
+        <div>
+          <strong>Dicas para melhor OCR:</strong>
+          <ul>
+            <li>Boa iluminação, sem sombras sobre o texto</li>
+            <li>Câmera paralela ao papel (sem inclinação)</li>
+            <li>Letra legível e espaçada</li>
+            <li>Em <strong>Config.</strong> ajuste o <em>Tipo de documento</em> conforme o conteúdo</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn-primary large" id="btnCloseHelp">
+        <span class="material-icons-round">check</span>Entendi, vamos lá!
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSTALAR APP (guia passo a passo) -->
+<div class="modal-overlay hidden" id="modalInstallGuide">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="help-header">
+      <span class="material-icons-round help-icon" style="background:linear-gradient(135deg,#1565C0,#00B4D8)">install_mobile</span>
+      <h3 class="modal-title" style="margin:0">Instalar o App</h3>
+    </div>
+
+    <!-- Android -->
+    <div id="installAndroid">
+      <p class="install-os-title"><span class="material-icons-round">android</span> Android (Chrome)</p>
+      <div class="help-step"><div class="step-num">1</div><div class="step-body"><p class="step-title">Abra no Chrome</p><p class="step-desc">Acesse <strong>nelsonassembler-svg.github.io/scribble-converter</strong> no navegador Chrome do celular.</p></div></div>
+      <div class="help-step"><div class="step-num">2</div><div class="step-body"><p class="step-title">Toque nos 3 pontinhos</p><p class="step-desc">No canto superior direito do Chrome toque em <strong>⋮</strong> (menu).</p></div></div>
+      <div class="help-step"><div class="step-num">3</div><div class="step-body"><p class="step-title">Instalar app</p><p class="step-desc">Toque em <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong>. Confirme tocando em <strong>Instalar</strong>.</p></div></div>
+      <div class="help-step"><div class="step-num">4</div><div class="step-body"><p class="step-title">Pronto!</p><p class="step-desc">O app aparece na tela inicial e na gaveta de apps como um aplicativo nativo, sem barra do Chrome.</p></div></div>
+
+      <div class="install-divider"></div>
+
+      <p class="install-os-title"><span class="material-icons-round">apple</span> iPhone / iPad (Safari)</p>
+      <div class="help-step"><div class="step-num">1</div><div class="step-body"><p class="step-title">Abra no Safari</p><p class="step-desc">No iPhone, use o <strong>Safari</strong> (não Chrome). Acesse o link do app.</p></div></div>
+      <div class="help-step"><div class="step-num">2</div><div class="step-body"><p class="step-title">Toque em Compartilhar</p><p class="step-desc">Toque no ícone de <strong>compartilhar</strong> (quadrado com seta para cima) na barra inferior do Safari.</p></div></div>
+      <div class="help-step"><div class="step-num">3</div><div class="step-body"><p class="step-title">Adicionar à Tela Inicial</p><p class="step-desc">Role a lista e toque em <strong>"Adicionar à Tela de Início"</strong>. Confirme o nome e toque em <strong>Adicionar</strong>.</p></div></div>
+    </div>
+
+    <button class="btn-primary large" id="btnInstallNow" style="margin-top:16px;width:100%;justify-content:center">
+      <span class="material-icons-round">install_mobile</span>Instalar agora (Android)
+    </button>
+    <button class="btn-ghost" id="btnCloseInstallGuide" style="width:100%;justify-content:center;margin-top:8px">Fechar</button>
   </div>
 </div>
 
