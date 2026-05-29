@@ -113,7 +113,8 @@ function updatePremiumUI() {
 let deferredInstallPrompt = null;
 
 function showInstallButtons() {
-  document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.remove('hidden'));
+  // Botão de instalação apenas na aba Config (btnInstallSettings)
+  // O banner flutuante é controlado pelo evento beforeinstallprompt
 }
 
 window.addEventListener('beforeinstallprompt', e => {
