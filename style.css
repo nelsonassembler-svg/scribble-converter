@@ -664,6 +664,205 @@ html, body {
   outline: none;
 }
 
+/* ===== PLAN CHIP (topbar) ===== */
+.plan-chip {
+  display: flex; align-items: center; gap: 4px;
+  background: linear-gradient(135deg, #7B1FA2, #AB47BC);
+  color: #fff; border-radius: 99px;
+  padding: 4px 10px; font-size: 11px; font-weight: 700;
+}
+.plan-chip .material-icons-round { font-size: 14px; }
+
+/* ===== VISITOR BANNER ===== */
+.visitor-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,180,0,.08);
+  border: 1px solid rgba(255,180,0,.25);
+  border-radius: var(--radius); padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.visitor-banner .material-icons-round { color: #FFB400; font-size: 22px; flex-shrink: 0; }
+.visitor-banner strong { font-size: 13px; font-weight: 700; }
+.visitor-banner p { font-size: 12px; color: var(--white-70); margin-top: 2px; }
+.btn-upgrade-mini {
+  background: linear-gradient(135deg, #7B1FA2, #AB47BC);
+  color: #fff; border: none; cursor: pointer;
+  border-radius: 99px; padding: 7px 14px;
+  font-size: 12px; font-weight: 700; font-family: var(--font);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ===== PREMIUM LOCK ===== */
+.premium-lock-msg {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: #FFB400;
+  margin-top: 10px; padding: 10px 12px;
+  background: rgba(255,180,0,.08);
+  border-radius: var(--radius-sm);
+}
+.premium-lock-msg .material-icons-round { font-size: 16px; }
+.premium-lock-msg a { color: #AB47BC; font-weight: 700; text-decoration: none; }
+
+/* ===== PLANOS ===== */
+.plan-current-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px;
+  margin-bottom: 16px; font-size: 14px;
+}
+.plan-current-banner .material-icons-round { color: gold; font-size: 22px; }
+
+.plan-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+}
+.plan-card.premium { border-color: #AB47BC; box-shadow: 0 0 24px rgba(171,71,188,.2); }
+.plan-card.annual  { border-color: gold;    box-shadow: 0 0 24px rgba(255,215,0,.15); }
+
+.plan-badge {
+  position: absolute; top: 12px; right: 12px;
+  background: linear-gradient(135deg, #7B1FA2, #AB47BC);
+  color: #fff; font-size: 10px; font-weight: 800;
+  letter-spacing: .8px; padding: 3px 10px; border-radius: 99px;
+}
+.plan-badge.gold { background: linear-gradient(135deg, #B8860B, #FFD700); color: #000; }
+
+.plan-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.plan-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.plan-icon.free { background: rgba(255,255,255,.08); }
+.plan-icon.prem { background: linear-gradient(135deg, #7B1FA2, #AB47BC); }
+.plan-icon.gold { background: linear-gradient(135deg, #B8860B, #FFD700); }
+.plan-icon .material-icons-round { font-size: 24px; color: #fff; }
+
+.plan-name  { font-size: 18px; font-weight: 700; }
+.plan-price { font-size: 28px; font-weight: 800; color: var(--white); }
+.plan-cents { font-size: 18px; }
+.plan-period { font-size: 13px; color: var(--white-70); font-weight: 400; }
+
+.plan-features { list-style: none; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+.plan-features li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--white-70);
+}
+.plan-features li.ok { color: var(--white); }
+.plan-features li.no { color: var(--white-40); text-decoration: line-through; }
+.plan-features li .material-icons-round { font-size: 16px; }
+.plan-features li.ok .material-icons-round { color: var(--green); }
+.plan-features li.no .material-icons-round { color: var(--white-40); }
+
+.btn-plan-free {
+  width: 100%; padding: 12px;
+  background: var(--white-08); border: 1px solid var(--border);
+  color: var(--white-40); border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; font-family: var(--font);
+  cursor: default;
+}
+.btn-plan-premium {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #7B1FA2 0%, #AB47BC 100%);
+  color: #fff; border: none; cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; font-family: var(--font);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity .15s, transform .1s;
+}
+.btn-plan-premium:active { transform: scale(.97); opacity: .9; }
+.btn-plan-annual {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #B8860B 0%, #FFD700 100%);
+  color: #000; border: none; cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; font-family: var(--font);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity .15s, transform .1s;
+}
+.btn-plan-annual:active { transform: scale(.97); }
+
+.plan-note {
+  font-size: 11px; color: var(--white-40);
+  text-align: center; margin-top: 8px;
+}
+.plan-security {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-size: 12px; color: var(--white-70); margin-top: 4px;
+}
+.plan-security .material-icons-round { font-size: 18px; color: var(--green); flex-shrink: 0; }
+
+/* ===== AUTH — TABS + LGPD + SENHA ===== */
+.form-tabs {
+  display: flex; gap: 0; margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+}
+.form-tab {
+  flex: 1; padding: 10px; background: none; border: none;
+  color: var(--white-40); font-size: 14px; font-weight: 600;
+  font-family: var(--font); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .15s, border-color .15px;
+}
+.form-tab.active { color: var(--blue-glow); border-bottom-color: var(--blue-light); }
+
+.password-wrap { position: relative; display: flex; align-items: center; }
+.password-wrap input { width: 100%; padding-right: 44px; }
+.pwd-toggle {
+  position: absolute; right: 4px;
+  color: var(--white-40) !important;
+}
+
+.lgpd-check { margin-bottom: 14px; }
+.lgpd-label {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px; color: var(--white-70); cursor: pointer;
+  user-select: none;
+}
+.lgpd-label input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; }
+.lgpd-label a { color: var(--blue-glow); }
+
+/* ===== LGPD MODAL TEXT ===== */
+.lgpd-text {
+  max-height: 50vh; overflow-y: auto;
+  background: rgba(0,0,0,.2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 16px;
+  font-size: 13px; line-height: 1.7; color: var(--white-70);
+}
+.lgpd-text h4 { color: var(--white); font-size: 14px; margin: 14px 0 6px; }
+.lgpd-text h4:first-child { margin-top: 0; }
+
+/* ===== PAYMENT MODAL ===== */
+.payment-price {
+  font-size: 32px; font-weight: 800;
+  background: linear-gradient(135deg, #7B1FA2, #AB47BC);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin: 8px 0;
+}
+.stripe-security {
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px; font-size: 11px; color: var(--white-40); margin-top: 12px;
+}
+.stripe-security .material-icons-round { font-size: 14px; color: var(--green); }
+
+/* ===== USER PLAN LABEL ===== */
+.user-avatar-wrap { position: relative; display: inline-block; }
+.plan-badge-avatar {
+  position: absolute; bottom: -2px; right: -4px;
+  font-size: 14px; line-height: 1;
+}
+.user-plan-label {
+  font-size: 12px; font-weight: 700; margin-top: 4px;
+  color: var(--white-40);
+}
+.user-plan-label.premium { color: #AB47BC; }
+.user-plan-label.admin   { color: gold; }
+
 /* ===== INSTALL BANNER ===== */
 .install-banner {
   position: fixed;

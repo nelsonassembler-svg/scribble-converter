@@ -34,6 +34,10 @@
       <span class="topbar-title">Scribble Converter</span>
     </div>
     <div class="topbar-actions">
+      <div class="plan-chip hidden" id="planChip">
+        <span class="material-icons-round">workspace_premium</span>
+        <span id="planChipLabel">Premium</span>
+      </div>
       <button class="icon-btn" id="btnSearch"><span class="material-icons-round">search</span></button>
       <button class="icon-btn" id="btnProfile"><span class="material-icons-round">account_circle</span></button>
     </div>
@@ -54,9 +58,19 @@
       <div class="section-header">
         <h2>Meus Documentos</h2>
         <span class="badge" id="badgeDocs">0</span>
-        <button class="icon-btn small sync-btn" id="btnSync" title="Sincronizar com nuvem">
+        <button class="icon-btn small sync-btn" id="btnSync" title="Sincronizar">
           <span class="material-icons-round">cloud_sync</span>
         </button>
+      </div>
+
+      <!-- BANNER VISITANTE -->
+      <div class="visitor-banner hidden" id="visitorBanner">
+        <span class="material-icons-round">lock</span>
+        <div>
+          <strong>Modo Visitante</strong>
+          <p>Faça login e assine o Premium para exportar e salvar na nuvem.</p>
+        </div>
+        <button class="btn-upgrade-mini" id="btnUpgradeBanner">Ver planos</button>
       </div>
 
       <!-- OCR ATIVO -->
@@ -72,19 +86,23 @@
         </div>
         <div class="ocr-text" id="ocrText" contenteditable="true" spellcheck="true"></div>
         <div class="ocr-actions">
-          <button class="btn-outline" id="btnExportWord">
+          <button class="btn-outline premium-only" id="btnExportWord">
             <span class="material-icons-round">description</span>Word
           </button>
-          <button class="btn-outline green" id="btnExportExcel">
+          <button class="btn-outline green premium-only" id="btnExportExcel">
             <span class="material-icons-round">table_chart</span>Excel
           </button>
           <button class="btn-outline purple" id="btnShareOcr">
             <span class="material-icons-round">share</span>Compartilhar
           </button>
-          <button class="btn-primary" id="btnSaveDoc">
+          <button class="btn-primary premium-only" id="btnSaveDoc">
             <span class="material-icons-round">save</span>Salvar
           </button>
         </div>
+        <p class="premium-lock-msg hidden" id="premiumLockMsg">
+          <span class="material-icons-round">lock</span>
+          Exporte e salve com o <a href="#" id="linkUpgrade">plano Premium</a>
+        </p>
       </div>
 
       <!-- LISTA -->
@@ -112,13 +130,97 @@
       </div>
     </section>
 
+    <!-- ABA: PLANOS -->
+    <section id="tabPlans" class="tab-section">
+      <div class="section-header"><h2>Planos</h2></div>
+
+      <div class="plan-current-banner" id="planCurrentBanner">
+        <span class="material-icons-round">workspace_premium</span>
+        <span id="planCurrentLabel">Você está no plano <strong>Visitante</strong></span>
+      </div>
+
+      <!-- CARD VISITANTE -->
+      <div class="plan-card">
+        <div class="plan-card-header">
+          <span class="plan-icon free"><span class="material-icons-round">person</span></span>
+          <div>
+            <p class="plan-name">Visitante</p>
+            <p class="plan-price">Grátis</p>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li class="ok"><span class="material-icons-round">check</span>Até 5 digitalizações/mês</li>
+          <li class="ok"><span class="material-icons-round">check</span>Reconhecimento OCR</li>
+          <li class="ok"><span class="material-icons-round">check</span>Compartilhar texto</li>
+          <li class="no"><span class="material-icons-round">close</span>Exportar para Word</li>
+          <li class="no"><span class="material-icons-round">close</span>Exportar para Excel</li>
+          <li class="no"><span class="material-icons-round">close</span>Salvar na nuvem</li>
+          <li class="no"><span class="material-icons-round">close</span>Histórico ilimitado</li>
+        </ul>
+        <button class="btn-plan-free" disabled>Plano atual</button>
+      </div>
+
+      <!-- CARD PREMIUM -->
+      <div class="plan-card premium">
+        <div class="plan-badge">MAIS POPULAR</div>
+        <div class="plan-card-header">
+          <span class="plan-icon prem"><span class="material-icons-round">workspace_premium</span></span>
+          <div>
+            <p class="plan-name">Premium</p>
+            <p class="plan-price">R$ 19<span class="plan-cents">,90</span><span class="plan-period">/mês</span></p>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li class="ok"><span class="material-icons-round">check</span>Digitalizações ilimitadas</li>
+          <li class="ok"><span class="material-icons-round">check</span>Reconhecimento OCR avançado</li>
+          <li class="ok"><span class="material-icons-round">check</span>Exportar para Word (.docx)</li>
+          <li class="ok"><span class="material-icons-round">check</span>Exportar para Excel (.xlsx)</li>
+          <li class="ok"><span class="material-icons-round">check</span>Salvar na nuvem (Supabase)</li>
+          <li class="ok"><span class="material-icons-round">check</span>Histórico ilimitado</li>
+          <li class="ok"><span class="material-icons-round">check</span>Compartilhar documentos</li>
+        </ul>
+        <button class="btn-plan-premium" id="btnAssinarPremium">
+          <span class="material-icons-round">workspace_premium</span>
+          Assinar Premium
+        </button>
+        <p class="plan-note">Cancele quando quiser · Pagamento seguro via Stripe</p>
+      </div>
+
+      <!-- CARD ANUAL -->
+      <div class="plan-card annual">
+        <div class="plan-badge gold">ECONOMIZE 30%</div>
+        <div class="plan-card-header">
+          <span class="plan-icon gold"><span class="material-icons-round">star</span></span>
+          <div>
+            <p class="plan-name">Premium Anual</p>
+            <p class="plan-price">R$ 167<span class="plan-cents">,00</span><span class="plan-period">/ano</span></p>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li class="ok"><span class="material-icons-round">check</span>Tudo do Premium</li>
+          <li class="ok"><span class="material-icons-round">check</span>Equivale a R$ 13,90/mês</li>
+          <li class="ok"><span class="material-icons-round">check</span>Economia de R$ 71,80/ano</li>
+        </ul>
+        <button class="btn-plan-annual" id="btnAssinarAnual">
+          <span class="material-icons-round">star</span>
+          Assinar Anual
+        </button>
+        <p class="plan-note">Pagamento único anual · Stripe seguro</p>
+      </div>
+
+      <div class="plan-security">
+        <span class="material-icons-round">lock</span>
+        <p>Pagamento 100% seguro processado pela <strong>Stripe</strong>. Seus dados de cartão nunca passam pelo nosso servidor.</p>
+      </div>
+
+    </section>
+
     <!-- ABA: CONFIGURAÇÕES -->
     <section id="tabConfig" class="tab-section">
       <div class="section-header"><h2>Configurações</h2></div>
 
       <div class="settings-group">
         <div class="settings-group-title">OCR</div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">translate</span>
@@ -135,7 +237,6 @@
             <option value="deu">Alemão</option>
           </select>
         </div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">hd</span>
@@ -151,7 +252,6 @@
             <option value="1.0">Máxima</option>
           </select>
         </div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">document_scanner</span>
@@ -169,7 +269,6 @@
             <option value="11">Texto esparso</option>
           </select>
         </div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">contrast</span>
@@ -187,7 +286,6 @@
 
       <div class="settings-group">
         <div class="settings-group-title">Aparência</div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">dark_mode</span>
@@ -205,7 +303,6 @@
 
       <div class="settings-group">
         <div class="settings-group-title">Exportação</div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">description</span>
@@ -219,33 +316,48 @@
             <option value="excel">Excel (.xlsx)</option>
           </select>
         </div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">calendar_today</span>
-            <div>
-              <p class="settings-label">Formato de data</p>
-              <p class="settings-sub">Como as datas aparecem</p>
-            </div>
+            <div><p class="settings-label">Formato de data</p></div>
           </div>
           <span class="settings-value">DD/MM/AAAA</span>
         </div>
-
         <div class="settings-item">
           <div class="settings-item-info">
             <span class="material-icons-round">attach_money</span>
-            <div>
-              <p class="settings-label">Moeda</p>
-              <p class="settings-sub">Moeda padrão nos documentos</p>
-            </div>
+            <div><p class="settings-label">Moeda</p></div>
           </div>
           <span class="settings-value">R$ (Real)</span>
         </div>
       </div>
 
       <div class="settings-group">
-        <div class="settings-group-title">Dados</div>
+        <div class="settings-group-title">Aplicativo</div>
+        <div class="settings-item clickable" id="btnInstallSettings">
+          <div class="settings-item-info">
+            <span class="material-icons-round" style="color:var(--accent)">install_mobile</span>
+            <div>
+              <p class="settings-label">Instalar no celular</p>
+              <p class="settings-sub">Adicione o app à tela inicial</p>
+            </div>
+          </div>
+          <span class="material-icons-round settings-arrow">chevron_right</span>
+        </div>
+        <div class="settings-item clickable" data-tab-go="tabPlans">
+          <div class="settings-item-info">
+            <span class="material-icons-round" style="color:gold">workspace_premium</span>
+            <div>
+              <p class="settings-label">Meu plano</p>
+              <p class="settings-sub" id="settingPlanLabel">Visitante (grátis)</p>
+            </div>
+          </div>
+          <span class="material-icons-round settings-arrow">chevron_right</span>
+        </div>
+      </div>
 
+      <div class="settings-group">
+        <div class="settings-group-title">Dados</div>
         <div class="settings-item clickable" id="btnClearLocal">
           <div class="settings-item-info">
             <span class="material-icons-round" style="color:var(--red)">delete_sweep</span>
@@ -258,24 +370,9 @@
         </div>
       </div>
 
-      <div class="settings-group">
-        <div class="settings-group-title">Aplicativo</div>
-
-        <div class="settings-item clickable" id="btnInstallSettings">
-          <div class="settings-item-info">
-            <span class="material-icons-round" style="color:var(--accent)">install_mobile</span>
-            <div>
-              <p class="settings-label">Instalar no celular</p>
-              <p class="settings-sub">Adicione o app à tela inicial do seu dispositivo</p>
-            </div>
-          </div>
-          <span class="material-icons-round settings-arrow">chevron_right</span>
-        </div>
-      </div>
-
     </section>
 
-    <!-- RODAPÉ NAS ABAS PRINCIPAIS -->
+    <!-- RODAPÉ -->
     <div class="dev-footer" id="devFooter">
       <span class="material-icons-round dev-footer-icon">draw</span>
       <p class="dev-footer-app">Scribble Converter</p>
@@ -301,6 +398,9 @@
     </button>
     <button class="nav-item" data-tab="tabSheets">
       <span class="material-icons-round">table_chart</span><span>Planilhas</span>
+    </button>
+    <button class="nav-item" data-tab="tabPlans">
+      <span class="material-icons-round">workspace_premium</span><span>Planos</span>
     </button>
     <button class="nav-item" data-tab="tabConfig">
       <span class="material-icons-round">settings</span><span>Config.</span>
@@ -381,31 +481,17 @@
         </div>
       </div>
       <div class="modal-view-actions">
-        <button class="icon-btn" id="btnViewRename" title="Renomear">
-          <span class="material-icons-round">edit</span>
-        </button>
-        <button class="icon-btn" id="btnViewShare" title="Compartilhar">
-          <span class="material-icons-round">share</span>
-        </button>
-        <button class="icon-btn" id="btnViewExport" title="Exportar">
-          <span class="material-icons-round">download</span>
-        </button>
-        <button class="icon-btn" id="btnCloseView" title="Fechar">
-          <span class="material-icons-round">close</span>
-        </button>
+        <button class="icon-btn" id="btnViewRename"><span class="material-icons-round">edit</span></button>
+        <button class="icon-btn" id="btnViewShare"><span class="material-icons-round">share</span></button>
+        <button class="icon-btn" id="btnViewExport"><span class="material-icons-round">download</span></button>
+        <button class="icon-btn" id="btnCloseView"><span class="material-icons-round">close</span></button>
       </div>
     </div>
     <div class="view-text-box" id="viewDocText"></div>
     <div class="modal-footer" style="margin-top:12px">
-      <button class="btn-outline" id="btnViewExportWord">
-        <span class="material-icons-round">description</span>Word
-      </button>
-      <button class="btn-outline green" id="btnViewExportExcel">
-        <span class="material-icons-round">table_chart</span>Excel
-      </button>
-      <button class="btn-primary" id="btnViewShareFull">
-        <span class="material-icons-round">share</span>Compartilhar
-      </button>
+      <button class="btn-outline" id="btnViewExportWord"><span class="material-icons-round">description</span>Word</button>
+      <button class="btn-outline green" id="btnViewExportExcel"><span class="material-icons-round">table_chart</span>Excel</button>
+      <button class="btn-primary" id="btnViewShareFull"><span class="material-icons-round">share</span>Compartilhar</button>
     </div>
   </div>
 </div>
@@ -424,35 +510,62 @@
   </div>
 </div>
 
-<!-- MODAL: PERFIL / LOGIN -->
+<!-- MODAL: PERFIL / LOGIN / CADASTRO -->
 <div class="modal-overlay hidden" id="modalProfile">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <h3 class="modal-title" id="profileTitle">Entrar</h3>
+
+    <!-- FORM LOGIN -->
     <div id="authForm">
+      <div class="form-tabs">
+        <button class="form-tab active" id="tabLogin">Entrar</button>
+        <button class="form-tab" id="tabRegister">Criar conta</button>
+      </div>
+
       <div class="form-group">
         <label>E-mail</label>
         <input type="email" id="authEmail" placeholder="seu@email.com" />
       </div>
       <div class="form-group">
         <label>Senha</label>
-        <input type="password" id="authPassword" placeholder="••••••••" />
+        <div class="password-wrap">
+          <input type="password" id="authPassword" placeholder="••••••••" />
+          <button class="icon-btn small pwd-toggle" id="btnTogglePwd" type="button" tabindex="-1">
+            <span class="material-icons-round" id="pwdEyeIcon">visibility</span>
+          </button>
+        </div>
       </div>
+
+      <!-- LGPD — só no cadastro -->
+      <div class="lgpd-check hidden" id="lgpdCheck">
+        <label class="lgpd-label">
+          <input type="checkbox" id="lgpdConsent" />
+          <span>Li e aceito a <a href="#" id="btnLgpd">Política de Privacidade (LGPD)</a> e os Termos de Uso.</span>
+        </label>
+      </div>
+
       <p class="auth-error hidden" id="authError"></p>
+
       <div class="modal-footer stack">
         <button class="btn-primary large" id="btnLogin">
           <span class="material-icons-round">login</span>Entrar
         </button>
-        <button class="btn-ghost" id="btnRegister">Criar conta</button>
         <button class="btn-ghost" id="btnCancelProfile">Fechar</button>
       </div>
     </div>
+
+    <!-- PAINEL USUÁRIO LOGADO -->
     <div id="userPanel" class="hidden">
       <div class="user-info-card">
-        <span class="material-icons-round user-avatar">account_circle</span>
+        <div class="user-avatar-wrap">
+          <span class="material-icons-round user-avatar">account_circle</span>
+          <span class="plan-badge-avatar" id="planBadgeAvatar"></span>
+        </div>
         <div>
           <p class="user-email" id="userEmail"></p>
           <p class="user-since">Membro desde <span id="userSince"></span></p>
+          <p class="user-plan-label" id="userPlanLabel">Visitante</p>
         </div>
       </div>
       <div class="user-stats">
@@ -471,9 +584,15 @@
           <span class="stat-lbl">Nuvem</span>
         </div>
       </div>
+
       <button class="btn-outline sync-full-btn" id="btnSyncCloud">
         <span class="material-icons-round">cloud_sync</span>Sincronizar com nuvem
       </button>
+
+      <button class="btn-plan-premium" id="btnUpgradeProfile" style="margin-top:10px;width:100%;justify-content:center">
+        <span class="material-icons-round">workspace_premium</span>Assinar Premium
+      </button>
+
       <div class="modal-footer stack" style="margin-top:12px">
         <button class="btn-ghost danger" id="btnLogout">
           <span class="material-icons-round">logout</span>Sair
@@ -484,13 +603,59 @@
   </div>
 </div>
 
+<!-- MODAL: LGPD -->
+<div class="modal-overlay hidden" id="modalLgpd">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 class="modal-title">Política de Privacidade — LGPD</h3>
+    <div class="lgpd-text">
+      <h4>1. Dados coletados</h4>
+      <p>Coletamos seu e-mail e senha (criptografada) para autenticação. Os documentos digitalizados são armazenados de forma segura no Supabase.</p>
+      <h4>2. Finalidade</h4>
+      <p>Seus dados são usados exclusivamente para fornecer o serviço Scribble Converter: autenticação, armazenamento de documentos e gestão do plano de assinatura.</p>
+      <h4>3. Compartilhamento</h4>
+      <p>Não compartilhamos seus dados com terceiros, exceto Stripe (processamento de pagamentos) e Supabase (banco de dados), ambos com padrões de segurança internacionais.</p>
+      <h4>4. Seus direitos (LGPD)</h4>
+      <p>Você tem direito a acessar, corrigir ou excluir seus dados a qualquer momento. Entre em contato: <strong>nelsonassembrer@gmail.com</strong></p>
+      <h4>5. Retenção</h4>
+      <p>Seus dados são mantidos enquanto sua conta estiver ativa. Ao excluir a conta, todos os dados são removidos em até 30 dias.</p>
+      <h4>6. Segurança</h4>
+      <p>Utilizamos HTTPS, autenticação segura (Supabase Auth) e não armazenamos dados de cartão de crédito (processado diretamente pela Stripe).</p>
+    </div>
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn-primary large" id="btnCloseLgpd">
+        <span class="material-icons-round">check</span>Entendi
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PAGAMENTO STRIPE -->
+<div class="modal-overlay hidden" id="modalPayment">
+  <div class="modal-center" style="width:92%;max-width:400px">
+    <div class="progress-icon" style="background:linear-gradient(135deg,#6772E5,#9B59B6)">
+      <span class="material-icons-round">credit_card</span>
+    </div>
+    <h3 id="paymentTitle">Assinar Premium</h3>
+    <p id="paymentSub">Você será redirecionado para o checkout seguro da Stripe.</p>
+    <p class="payment-price" id="paymentPrice">R$ 19,90/mês</p>
+    <div class="modal-footer stack" style="margin-top:20px">
+      <button class="btn-primary large" id="btnGoToStripe">
+        <span class="material-icons-round">open_in_new</span>Ir para o pagamento
+      </button>
+      <button class="btn-ghost" id="btnCancelPayment">Cancelar</button>
+    </div>
+    <p class="stripe-security"><span class="material-icons-round">lock</span>Pagamento seguro via Stripe</p>
+  </div>
+</div>
+
 <!-- BANNER INSTALAR PWA -->
 <div class="install-banner hidden" id="installBanner">
   <div class="install-banner-left">
     <span class="material-icons-round">install_mobile</span>
     <div>
       <strong>Instalar no celular</strong>
-      <p>Acesse o app direto da tela inicial</p>
+      <p>Acesse direto da tela inicial</p>
     </div>
   </div>
   <div class="install-banner-right">
@@ -508,6 +673,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8/build/index.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <script src="app.js"></script>
 </body>
 </html>

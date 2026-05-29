@@ -1,14 +1,117 @@
 /* ===== SERVICE WORKER ===== */
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+
+/* ===== STRIPE ===== */
+const STRIPE_PK = 'pk_live_51SiipcR5OonznFInqbNzaUxI3bHwqshMFjSHXmYJx3YsDMymr72zKKqtZcHpidAjqP20K5rSUVdwqa8IFFzpj3Ml00D9Y3PpxX';
+// Links de pagamento criados no Stripe Dashboard:
+const STRIPE_LINK_MONTHLY = 'https://buy.stripe.com/LINK_MENSAL'; // substitua após criar
+const STRIPE_LINK_ANNUAL  = 'https://buy.stripe.com/LINK_ANUAL';  // substitua após criar
+const ADMIN_EMAIL = 'nelsontcmagalhaes@gmail.com';
+
+/* ===== CONFIG SUPABASE ===== */
+const SUPABASE_URL = 'https://cklxdvlkagwyzzmxdmpm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrbHhkdmxrYWd3eXp6bXhkbXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDU5ODQsImV4cCI6MjA5NTU4MTk4NH0.I1vYFqOJQOo1Jsw8Q1LIVcJ8nshqnjUu5x6hrBWjiqA';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ===== STATE ===== */
+let currentUser  = null;
+let isPremium    = false;
+let currentImage = null;
+let outputMode   = 'word';
+let ocrResult    = '';
+let docs         = [];
+let sheets       = [];
+let searchQuery  = '';
+let viewingDoc   = null;
+let renamingDoc  = null;
+let stripeMode   = 'monthly'; // 'monthly' | 'annual'
+let scanCount    = 0; // contador de scans do visitante
+
+/* ===== SETTINGS ===== */
+let settings = {
+  lang: 'por', quality: 0.85, format: 'word',
+  theme: 'dark', psm: '6', preprocess: 'on'
+};
+
+function loadSettings() {
+  try { settings = { ...settings, ...JSON.parse(localStorage.getItem('scribble_settings') || '{}') }; } catch {}
+  try { scanCount = parseInt(localStorage.getItem('scribble_scan_count') || '0'); } catch {}
+  applySettings();
+}
+function saveSettings() { localStorage.setItem('scribble_settings', JSON.stringify(settings)); }
+
+function applySettings() {
+  document.documentElement.setAttribute('data-theme', settings.theme);
+  if ($('settingLang'))    $('settingLang').value    = settings.lang;
+  if ($('settingQuality')) $('settingQuality').value = String(settings.quality);
+  if ($('settingFormat'))  $('settingFormat').value  = settings.format;
+  if ($('settingPsm'))     $('settingPsm').value     = settings.psm;
+  document.querySelectorAll('[data-theme-btn]').forEach(b =>
+    b.classList.toggle('active', b.dataset.themeBtn === settings.theme));
+  document.querySelectorAll('[data-preprocess]').forEach(b =>
+    b.classList.toggle('active', b.dataset.preprocess === settings.preprocess));
+  outputMode = settings.format;
+  document.querySelectorAll('.toggle-btn[data-mode]').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === outputMode));
+}
+
+/* ===== DOM ===== */
+const $ = id => document.getElementById(id);
+
+/* ===== PREMIUM CHECK ===== */
+function checkPremium(user) {
+  if (!user) { isPremium = false; return; }
+  if (user.email === ADMIN_EMAIL) { isPremium = true; return; }
+  const meta = user.user_metadata || {};
+  isPremium = meta.premium === true || meta.plan === 'premium' || meta.plan === 'annual';
+}
+
+function updatePremiumUI() {
+  const chip = $('planChip');
+  if (isPremium) {
+    chip.classList.remove('hidden');
+    $('planChipLabel').textContent = currentUser?.email === ADMIN_EMAIL ? 'Admin' : 'Premium';
+    $('planCurrentLabel').innerHTML = `Você está no plano <strong>${currentUser?.email === ADMIN_EMAIL ? 'Administrador' : 'Premium'}</strong> ✨`;
+    $('settingPlanLabel').textContent = 'Premium ativo';
+    $('visitorBanner').classList.add('hidden');
+    $('premiumLockMsg').classList.add('hidden');
+    // Mostra botões premium
+    document.querySelectorAll('.premium-only').forEach(b => { b.style.opacity = '1'; b.disabled = false; });
+    // Esconde botão assinar no perfil
+    if ($('btnUpgradeProfile')) $('btnUpgradeProfile').classList.add('hidden');
+  } else {
+    chip.classList.add('hidden');
+    $('planCurrentLabel').innerHTML = 'Você está no plano <strong>Visitante</strong>';
+    $('settingPlanLabel').textContent = 'Visitante (grátis)';
+    if (currentUser) $('visitorBanner').classList.remove('hidden');
+    document.querySelectorAll('.premium-only').forEach(b => { b.style.opacity = '0.4'; b.disabled = true; });
+    if ($('btnUpgradeProfile')) $('btnUpgradeProfile').classList.remove('hidden');
+  }
+
+  // Plano no perfil
+  if ($('userPlanLabel')) {
+    if (!currentUser) return;
+    if (currentUser.email === ADMIN_EMAIL) {
+      $('userPlanLabel').textContent = '👑 Administrador';
+      $('userPlanLabel').className = 'user-plan-label admin';
+      $('planBadgeAvatar').textContent = '👑';
+    } else if (isPremium) {
+      $('userPlanLabel').textContent = '⭐ Premium';
+      $('userPlanLabel').className = 'user-plan-label premium';
+      $('planBadgeAvatar').textContent = '⭐';
+    } else {
+      $('userPlanLabel').textContent = 'Visitante';
+      $('userPlanLabel').className = 'user-plan-label';
+      $('planBadgeAvatar').textContent = '';
+    }
+  }
 }
 
 /* ===== PWA INSTALL ===== */
 let deferredInstallPrompt = null;
 
-// Mostra botões de instalação sempre (com comportamento inteligente)
 function showInstallButtons() {
   document.querySelectorAll('.btn-install-footer').forEach(b => b.classList.remove('hidden'));
 }
@@ -27,10 +130,7 @@ window.addEventListener('appinstalled', () => {
   showToast('App instalado com sucesso!');
 });
 
-// Exibe botão sempre — se não tiver prompt nativo, dá instrução manual
-window.addEventListener('load', () => {
-  setTimeout(showInstallButtons, 2500);
-});
+window.addEventListener('load', () => setTimeout(showInstallButtons, 2500));
 
 async function triggerInstall() {
   if (deferredInstallPrompt) {
@@ -43,86 +143,16 @@ async function triggerInstall() {
     }
     return;
   }
-  // iOS / browsers sem suporte ao prompt
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if (isIOS) {
-    showToast('No Safari: toque em Compartilhar → "Adicionar à Tela Inicial"');
-  } else {
-    showToast('No Chrome: menu (⋮) → "Adicionar à tela inicial"');
-  }
+  showToast(isIOS
+    ? 'No Safari: toque em Compartilhar → "Adicionar à Tela Inicial"'
+    : 'No Chrome: menu (⋮) → "Adicionar à tela inicial"');
 }
-
-/* ===== CONFIG SUPABASE ===== */
-const SUPABASE_URL = 'https://cklxdvlkagwyzzmxdmpm.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrbHhkdmxrYWd3eXp6bXhkbXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDU5ODQsImV4cCI6MjA5NTU4MTk4NH0.I1vYFqOJQOo1Jsw8Q1LIVcJ8nshqnjUu5x6hrBWjiqA';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-/* ===== STATE ===== */
-let currentUser  = null;
-let currentImage = null;
-let outputMode   = 'word';
-let ocrResult    = '';
-let docs         = [];
-let sheets       = [];
-let searchQuery  = '';
-let viewingDoc   = null;    // doc aberto no modal de visualização
-let renamingDoc  = null;    // doc sendo renomeado
-
-/* ===== SETTINGS ===== */
-let settings = {
-  lang:       'por',
-  quality:    0.85,
-  format:     'word',
-  theme:      'dark',
-  psm:        '6',
-  preprocess: 'on'
-};
-
-function loadSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem('scribble_settings') || '{}');
-    settings = { ...settings, ...s };
-  } catch {}
-  applySettings();
-}
-
-function saveSettings() {
-  localStorage.setItem('scribble_settings', JSON.stringify(settings));
-}
-
-function applySettings() {
-  document.documentElement.setAttribute('data-theme', settings.theme);
-
-  const langEl = $('settingLang');
-  if (langEl) langEl.value = settings.lang;
-
-  const qualEl = $('settingQuality');
-  if (qualEl) qualEl.value = String(settings.quality);
-  const psmEl = $('settingPsm');
-  if (psmEl) psmEl.value = settings.psm;
-  document.querySelectorAll('[data-preprocess]').forEach(b => {
-    b.classList.toggle('active', b.dataset.preprocess === settings.preprocess);
-  });
-
-  const fmtEl = $('settingFormat');
-  if (fmtEl) fmtEl.value = settings.format;
-
-  document.querySelectorAll('[data-theme-btn]').forEach(b => {
-    b.classList.toggle('active', b.dataset.themeBtn === settings.theme);
-  });
-
-  outputMode = settings.format;
-  document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === outputMode);
-  });
-}
-
-/* ===== DOM ===== */
-const $ = id => document.getElementById(id);
 
 /* ===== INIT ===== */
 window.addEventListener('load', async () => {
   loadSettings();
+  checkPaymentReturn();   // verifica retorno do Stripe
   await initSupabase();
   setTimeout(() => {
     $('splash').style.opacity = '0';
@@ -135,62 +165,157 @@ window.addEventListener('load', async () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Install buttons
+  // Install
   document.querySelectorAll('.btn-install-footer').forEach(b => b.addEventListener('click', triggerInstall));
   $('btnInstallConfirm')?.addEventListener('click', triggerInstall);
   $('btnInstallDismiss')?.addEventListener('click', () => $('installBanner').classList.add('hidden'));
-
-  // Settings
-  $('settingLang')?.addEventListener('change', e => { settings.lang = e.target.value; saveSettings(); });
-  $('settingQuality')?.addEventListener('change', e => { settings.quality = parseFloat(e.target.value); saveSettings(); });
-  $('settingFormat')?.addEventListener('change', e => { settings.format = e.target.value; outputMode = e.target.value; saveSettings(); });
-  $('settingPsm')?.addEventListener('change', e => { settings.psm = e.target.value; saveSettings(); });
-  document.querySelectorAll('[data-preprocess]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      settings.preprocess = btn.dataset.preprocess;
-      document.querySelectorAll('[data-preprocess]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      saveSettings();
-    });
-  });
-  document.querySelectorAll('[data-theme-btn]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      settings.theme = btn.dataset.themeBtn;
-      saveSettings(); applySettings();
-    });
-  });
-
-  // Instalar via Config
   $('btnInstallSettings')?.addEventListener('click', triggerInstall);
 
-  // Clear local
+  // Settings
+  $('settingLang')?.addEventListener('change',    e => { settings.lang    = e.target.value;           saveSettings(); });
+  $('settingQuality')?.addEventListener('change', e => { settings.quality  = parseFloat(e.target.value); saveSettings(); });
+  $('settingFormat')?.addEventListener('change',  e => { settings.format   = e.target.value; outputMode = e.target.value; saveSettings(); });
+  $('settingPsm')?.addEventListener('change',     e => { settings.psm      = e.target.value;           saveSettings(); });
+
+  document.querySelectorAll('[data-preprocess]').forEach(btn => btn.addEventListener('click', () => {
+    settings.preprocess = btn.dataset.preprocess;
+    document.querySelectorAll('[data-preprocess]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); saveSettings();
+  }));
+  document.querySelectorAll('[data-theme-btn]').forEach(btn => btn.addEventListener('click', () => {
+    settings.theme = btn.dataset.themeBtn;
+    saveSettings(); applySettings();
+  }));
+
   $('btnClearLocal')?.addEventListener('click', () => {
     if (!confirm('Apagar todos os documentos salvos localmente?')) return;
-    localStorage.removeItem('scribble_docs');
-    localStorage.removeItem('scribble_sheets');
-    docs = []; sheets = [];
-    renderDocs(); renderSheets();
+    localStorage.removeItem('scribble_docs'); localStorage.removeItem('scribble_sheets');
+    docs = []; sheets = []; renderDocs(); renderSheets();
     showToast('Dados locais removidos');
   });
+
+  // Config → planos link
+  document.querySelectorAll('[data-tab-go]').forEach(el => el.addEventListener('click', () => {
+    const tab = el.dataset.tabGo;
+    switchTab(tab);
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  }));
 
   // Sync
   $('btnSync')?.addEventListener('click', syncCloud);
   $('btnSyncCloud')?.addEventListener('click', syncCloud);
+
+  // Planos
+  $('btnAssinarPremium')?.addEventListener('click',  () => openPayment('monthly'));
+  $('btnAssinarAnual')?.addEventListener('click',    () => openPayment('annual'));
+  $('btnUpgradeBanner')?.addEventListener('click',   () => {
+    switchTab('tabPlans');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabPlans'));
+  });
+  $('btnUpgradeProfile')?.addEventListener('click', () => { $('modalProfile').classList.add('hidden'); openPayment('monthly'); });
+  $('linkUpgrade')?.addEventListener('click', e => { e.preventDefault(); switchTab('tabPlans'); });
+
+  // Modal pagamento
+  $('btnGoToStripe')?.addEventListener('click',    goToStripe);
+  $('btnCancelPayment')?.addEventListener('click', () => $('modalPayment').classList.add('hidden'));
+
+  // LGPD
+  $('btnLgpd')?.addEventListener('click',     e => { e.preventDefault(); $('modalLgpd').classList.remove('hidden'); });
+  $('btnCloseLgpd')?.addEventListener('click', () => $('modalLgpd').classList.add('hidden'));
+  $('modalLgpd')?.addEventListener('click',    e => { if (e.target === $('modalLgpd')) $('modalLgpd').classList.add('hidden'); });
+
+  // Auth tabs
+  $('tabLogin')?.addEventListener('click',    () => switchAuthTab('login'));
+  $('tabRegister')?.addEventListener('click', () => switchAuthTab('register'));
+
+  // Show/hide senha
+  $('btnTogglePwd')?.addEventListener('click', () => {
+    const inp  = $('authPassword');
+    const icon = $('pwdEyeIcon');
+    const isHidden = inp.type === 'password';
+    inp.type   = isHidden ? 'text' : 'password';
+    icon.textContent = isHidden ? 'visibility_off' : 'visibility';
+  });
 });
+
+function switchAuthTab(tab) {
+  $('tabLogin').classList.toggle('active',    tab === 'login');
+  $('tabRegister').classList.toggle('active', tab === 'register');
+  $('lgpdCheck').classList.toggle('hidden',   tab !== 'register');
+  $('btnLogin').innerHTML = tab === 'login'
+    ? '<span class="material-icons-round">login</span>Entrar'
+    : '<span class="material-icons-round">person_add</span>Criar conta';
+  $('authError').classList.add('hidden');
+}
 
 /* ===== SUPABASE AUTH ===== */
 async function initSupabase() {
   const { data: { session } } = await db.auth.getSession();
-  if (session?.user) currentUser = session.user;
+  if (session?.user) { currentUser = session.user; checkPremium(currentUser); }
   db.auth.onAuthStateChange((_e, session) => {
     currentUser = session?.user || null;
+    checkPremium(currentUser);
+    updatePremiumUI();
     renderProfile();
-    if (currentUser) {
-      $('statCloud').innerHTML = '<span class="material-icons-round" style="font-size:20px;color:var(--green)">cloud_done</span>';
-    } else {
-      $('statCloud').innerHTML = '<span class="material-icons-round" style="font-size:20px">cloud_off</span>';
-    }
   });
+  updatePremiumUI();
+}
+
+/* ===== STRIPE PAGAMENTO ===== */
+function openPayment(mode) {
+  if (!currentUser) { showToast('Faça login primeiro'); openProfile(); return; }
+  stripeMode = mode;
+  $('paymentTitle').textContent = mode === 'annual' ? 'Assinar Premium Anual' : 'Assinar Premium';
+  $('paymentPrice').textContent = mode === 'annual' ? 'R$ 167,00/ano' : 'R$ 19,90/mês';
+  $('paymentSub').textContent   = 'Você será redirecionado para o checkout seguro da Stripe.';
+  $('modalPayment').classList.remove('hidden');
+}
+
+function goToStripe() {
+  if (!currentUser) return;
+  const baseUrl = stripeMode === 'annual' ? STRIPE_LINK_ANNUAL : STRIPE_LINK_MONTHLY;
+  const successUrl = encodeURIComponent(
+    `${location.origin}${location.pathname}?payment=success&plan=${stripeMode}&email=${encodeURIComponent(currentUser.email)}`
+  );
+  const cancelUrl  = encodeURIComponent(`${location.origin}${location.pathname}?payment=cancel`);
+  const url = `${baseUrl}?prefilled_email=${encodeURIComponent(currentUser.email)}&success_url=${successUrl}&cancel_url=${cancelUrl}`;
+  $('modalPayment').classList.add('hidden');
+  window.open(url, '_blank');
+}
+
+function checkPaymentReturn() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('payment') === 'success') {
+    const plan  = params.get('plan') || 'monthly';
+    const email = params.get('email') || '';
+    // Limpa URL
+    history.replaceState({}, '', location.pathname);
+    // Aguarda auth inicializar e atualiza premium
+    setTimeout(async () => {
+      if (currentUser && currentUser.email === email) {
+        await activatePremium(plan);
+      } else {
+        // Salva pendência para ativar após login
+        localStorage.setItem('scribble_pending_plan', plan);
+        localStorage.setItem('scribble_pending_email', email);
+        showToast('Pagamento recebido! Faça login para ativar o Premium.');
+      }
+    }, 2000);
+  } else if (params.get('payment') === 'cancel') {
+    history.replaceState({}, '', location.pathname);
+    showToast('Pagamento cancelado.');
+  }
+}
+
+async function activatePremium(plan) {
+  try {
+    await db.auth.updateUser({ data: { premium: true, plan: plan, premium_since: new Date().toISOString() } });
+    isPremium = true;
+    updatePremiumUI();
+    showToast('Premium ativado com sucesso! Bem-vindo(a)! 🎉');
+    localStorage.removeItem('scribble_pending_plan');
+    localStorage.removeItem('scribble_pending_email');
+  } catch { showToast('Erro ao ativar Premium. Entre em contato.'); }
 }
 
 /* ===== BOTTOM NAV ===== */
@@ -217,17 +342,30 @@ $('btnSearch').addEventListener('click', () => {
 });
 $('btnCloseSearch').addEventListener('click', () => {
   $('searchBar').classList.add('hidden');
-  $('searchInput').value = '';
-  searchQuery = '';
+  $('searchInput').value = ''; searchQuery = '';
   renderDocs(); renderSheets();
 });
 $('searchInput').addEventListener('input', e => {
-  searchQuery = e.target.value.toLowerCase();
-  renderDocs(); renderSheets();
+  searchQuery = e.target.value.toLowerCase(); renderDocs(); renderSheets();
 });
 
 /* ===== FAB ===== */
-$('fabScan').addEventListener('click', openScanModal);
+$('fabScan').addEventListener('click', () => {
+  if (!currentUser) {
+    // visitante pode escanear até 5x/mês
+    const month = new Date().toISOString().slice(0, 7);
+    const key   = `scribble_scan_${month}`;
+    const cnt   = parseInt(localStorage.getItem(key) || '0');
+    if (cnt >= 5) {
+      showToast('Limite de 5 scans/mês no plano Visitante. Assine o Premium!');
+      switchTab('tabPlans');
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabPlans'));
+      return;
+    }
+    localStorage.setItem(key, String(cnt + 1));
+  }
+  openScanModal();
+});
 
 function openScanModal() {
   $('modalScan').classList.remove('hidden');
@@ -240,24 +378,16 @@ function openScanModal() {
 
 $('btnCancelScan').addEventListener('click', closeScanModal);
 $('modalScan').addEventListener('click', e => { if (e.target === $('modalScan')) closeScanModal(); });
-
-function closeScanModal() {
-  $('modalScan').classList.add('hidden');
-  resetCameraStream();
-}
+function closeScanModal() { $('modalScan').classList.add('hidden'); resetCameraStream(); }
 
 /* ===== CÂMERA ===== */
 $('btnCamera').addEventListener('click', async () => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    const video = $('cameraStream');
-    video.srcObject = stream;
-    video.classList.remove('hidden');
-    $('scanPlaceholder').classList.add('hidden');
-    $('previewImg').classList.add('hidden');
-
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video  = $('cameraStream');
+    video.srcObject = stream; video.classList.remove('hidden');
+    $('scanPlaceholder').classList.add('hidden'); $('previewImg').classList.add('hidden');
+    const oldHtml  = $('btnCamera').innerHTML;
     const oldClick = $('btnCamera').onclick;
     $('btnCamera').innerHTML = '<span class="material-icons-round">camera</span> Capturar';
     $('btnCamera').onclick = () => {
@@ -268,38 +398,25 @@ $('btnCamera').addEventListener('click', async () => {
         stream.getTracks().forEach(t => t.stop());
         video.classList.add('hidden');
         setPreviewBlob(blob);
-        $('btnCamera').innerHTML = '<span class="material-icons-round">photo_camera</span> Câmera';
-        $('btnCamera').onclick = oldClick;
+        $('btnCamera').innerHTML  = oldHtml;
+        $('btnCamera').onclick    = oldClick;
       }, 'image/jpeg', settings.quality);
     };
-  } catch {
-    showToast('Câmera não disponível — use Galeria');
-    $('galleryInput').click();
-  }
+  } catch { showToast('Câmera não disponível — use Galeria'); $('galleryInput').click(); }
 });
 
 $('btnUpload').addEventListener('click', () => $('galleryInput').click());
-$('galleryInput').addEventListener('change', e => {
-  if (e.target.files[0]) setPreviewBlob(e.target.files[0]);
-  e.target.value = '';
-});
-$('fileInput').addEventListener('change', e => {
-  if (e.target.files[0]) setPreviewBlob(e.target.files[0]);
-  e.target.value = '';
-});
+$('galleryInput').addEventListener('change', e => { if (e.target.files[0]) setPreviewBlob(e.target.files[0]); e.target.value = ''; });
 
 function setPreviewBlob(blob) {
-  // aplica compressão conforme qualidade
-  const img = new Image();
-  const url = URL.createObjectURL(blob);
+  const img = new Image(), url = URL.createObjectURL(blob);
   img.onload = () => {
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
     canvas.getContext('2d').drawImage(img, 0, 0);
     canvas.toBlob(compressed => {
       currentImage = compressed;
-      const purl = URL.createObjectURL(compressed);
-      $('previewImg').src = purl;
+      $('previewImg').src = URL.createObjectURL(compressed);
       $('previewImg').classList.remove('hidden');
       $('scanPlaceholder').classList.add('hidden');
       $('cameraStream').classList.add('hidden');
@@ -311,64 +428,38 @@ function setPreviewBlob(blob) {
 }
 
 function resetCameraStream() {
-  const video = $('cameraStream');
-  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-  video.classList.add('hidden');
+  const v = $('cameraStream');
+  if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
+  v.classList.add('hidden');
 }
 
 /* ===== TOGGLE MODO ===== */
 document.querySelectorAll('.toggle-btn[data-mode]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    outputMode = btn.dataset.mode;
+    btn.classList.add('active'); outputMode = btn.dataset.mode;
   });
 });
 
-/* ===== PRÉ-PROCESSAMENTO DE IMAGEM ===== */
+/* ===== PRÉ-PROCESSAMENTO ===== */
 function preprocessImage(blob) {
   return new Promise(resolve => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
+    const img = new Image(), url = URL.createObjectURL(blob);
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      // Escala para no mínimo 1800px de largura (melhora OCR)
       const scale = Math.max(1, 1800 / img.naturalWidth);
-      canvas.width  = img.naturalWidth  * scale;
-      canvas.height = img.naturalHeight * scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth * scale; canvas.height = img.naturalHeight * scale;
       const ctx = canvas.getContext('2d');
-
-      // Desenha a imagem escalada
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Filtros de melhoria
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = imageData.data;
-
+      const id = ctx.getImageData(0, 0, canvas.width, canvas.height), d = id.data;
       for (let i = 0; i < d.length; i += 4) {
-        // Escala de cinza
         const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-
-        // Aumento de contraste (fórmula sigmoid)
-        const contrast = 1.8;
-        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-        let enhanced = factor * (gray - 128) + 128;
-        enhanced = Math.max(0, Math.min(255, enhanced));
-
-        // Binarização adaptativa (threshold)
-        const threshold = 140;
-        const binary = enhanced > threshold ? 255 : 0;
-
-        d[i] = d[i+1] = d[i+2] = binary;
-        // d[i+3] = alfa (mantém)
+        const contrast = 1.8, factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+        let enhanced = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
+        d[i] = d[i+1] = d[i+2] = enhanced > 140 ? 255 : 0;
       }
-
-      ctx.putImageData(imageData, 0, 0);
-
-      canvas.toBlob(processed => {
-        URL.revokeObjectURL(url);
-        resolve(processed);
-      }, 'image/png'); // PNG sem compressão para OCR mais preciso
+      ctx.putImageData(id, 0, 0);
+      canvas.toBlob(p => { URL.revokeObjectURL(url); resolve(p); }, 'image/png');
     };
     img.src = url;
   });
@@ -381,165 +472,82 @@ async function runOCR() {
   if (!currentImage) return;
   closeScanModal();
   $('modalProgress').classList.remove('hidden');
-  $('progressFill').style.width = '0%';
-  $('progressPct').textContent = '0%';
+  $('progressFill').style.width = '0%'; $('progressPct').textContent = '0%';
   $('progressStatus').textContent = 'Preparando imagem...';
-
   try {
-    // Pré-processa a imagem (se ativado)
-    const processed = settings.preprocess === 'on'
-      ? await preprocessImage(currentImage)
-      : currentImage;
+    const processed = settings.preprocess === 'on' ? await preprocessImage(currentImage) : currentImage;
     $('progressStatus').textContent = 'Iniciando OCR...';
-
     const worker = await Tesseract.createWorker(settings.lang, 1, {
       logger: m => {
         if (m.status === 'recognizing text') {
           const pct = Math.round(m.progress * 100);
-          $('progressFill').style.width = pct + '%';
-          $('progressPct').textContent = pct + '%';
+          $('progressFill').style.width = pct + '%'; $('progressPct').textContent = pct + '%';
           $('progressStatus').textContent = 'Reconhecendo texto...';
-        } else {
-          $('progressStatus').textContent = m.status;
-        }
+        } else { $('progressStatus').textContent = m.status; }
       }
     });
-
-    // Configurações para melhor precisão
-    await worker.setParameters({
-      tessedit_pageseg_mode: settings.psm,
-      preserve_interword_spaces: '1',
-    });
-
+    await worker.setParameters({ tessedit_pageseg_mode: settings.psm, preserve_interword_spaces: '1' });
     const { data: { text } } = await worker.recognize(processed);
     await worker.terminate();
-
-    // Limpa o texto: remove linhas com só símbolos/ruído
     ocrResult = cleanOcrText(text);
     $('modalProgress').classList.add('hidden');
     showOcrCard();
-  } catch (err) {
-    $('modalProgress').classList.add('hidden');
-    showToast('Erro no OCR: ' + err.message);
-  }
+  } catch (err) { $('modalProgress').classList.add('hidden'); showToast('Erro no OCR: ' + err.message); }
 }
 
 function cleanOcrText(raw) {
-  return raw
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => {
-      if (!l) return false;
-      // Remove linhas com menos de 2 caracteres alfanuméricos
-      const alphaNum = (l.match(/[a-zA-Z0-9À-ÿ]/g) || []).length;
-      return alphaNum >= 2;
-    })
-    .join('\n')
-    .trim();
+  return raw.split('\n').map(l => l.trim()).filter(l => {
+    if (!l) return false;
+    return (l.match(/[a-zA-Z0-9À-ÿ]/g) || []).length >= 2;
+  }).join('\n').trim();
 }
 
 function showOcrCard() {
   const url = URL.createObjectURL(currentImage);
-  $('ocrPreview').innerHTML = `<img src="${url}" alt="doc" style="width:100%;border-radius:8px;max-height:140px;object-fit:cover" />`;
-  $('ocrText').textContent = ocrResult;
-  $('ocrDocName').value = 'Documento_' + dateSlug();
+  $('ocrPreview').innerHTML = `<img src="${url}" style="width:100%;border-radius:8px;max-height:140px;object-fit:cover" />`;
+  $('ocrText').textContent  = ocrResult;
+  $('ocrDocName').value     = 'Documento_' + dateSlug();
   $('ocrCard').classList.remove('hidden');
+
+  // Mostra/esconde lock msg
+  if (!isPremium) {
+    $('premiumLockMsg').classList.remove('hidden');
+  } else {
+    $('premiumLockMsg').classList.add('hidden');
+  }
+
   switchTab('tabDocs');
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabDocs'));
   $('mainContent').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-$('btnCloseOcr').addEventListener('click', () => {
-  $('ocrCard').classList.add('hidden');
-  ocrResult = ''; currentImage = null;
-});
+$('btnCloseOcr').addEventListener('click', () => { $('ocrCard').classList.add('hidden'); ocrResult = ''; currentImage = null; });
 
-/* ===== COMPARTILHAR (OCR card) ===== */
+/* ===== COMPARTILHAR ===== */
 $('btnShareOcr').addEventListener('click', () => shareText($('ocrText').innerText.trim(), $('ocrDocName').value));
-
 async function shareText(text, title = 'Documento') {
   if (!text) { showToast('Nenhum texto para compartilhar'); return; }
-  if (navigator.share) {
-    try {
-      await navigator.share({ title, text });
-      return;
-    } catch {}
+  if (navigator.share) { try { await navigator.share({ title, text }); return; } catch {} }
+  try { await navigator.clipboard.writeText(text); showToast('Texto copiado!'); }
+  catch { showToast('Compartilhamento não disponível'); }
+}
+
+/* ===== EXPORTAR (bloqueado para visitantes) ===== */
+function requirePremium(action) {
+  if (!isPremium) {
+    showToast('Recurso exclusivo do plano Premium');
+    switchTab('tabPlans');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabPlans'));
+    return false;
   }
-  // Fallback: copiar para clipboard
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast('Texto copiado para a área de transferência!');
-  } catch {
-    showToast('Compartilhamento não disponível neste navegador');
-  }
+  if (!currentUser) { showToast('Faça login primeiro'); openProfile(); return false; }
+  return true;
 }
 
-/* ===== EXPORTAR WORD ===== */
-$('btnExportWord').addEventListener('click', () => exportWord($('ocrText').innerText.trim(), $('ocrDocName').value));
-$('btnViewExportWord').addEventListener('click', () => {
-  if (viewingDoc) exportWord(viewingDoc.text, viewingDoc.name);
-});
-
-async function exportWord(text, docName = 'Documento') {
-  if (!text) { showToast('Nenhum texto para exportar'); return; }
-  try {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
-    const lines = text.split('\n').filter(l => l.trim());
-    const paragraphs = lines.map((line, i) =>
-      new Paragraph({
-        children: [new TextRun({ text: line, size: 24, font: 'Calibri' })],
-        spacing: { after: 160 },
-        ...(i === 0 ? { heading: HeadingLevel.HEADING_2 } : {})
-      })
-    );
-    const doc = new Document({
-      sections: [{
-        children: [
-          new Paragraph({ children: [new TextRun({ text: docName, bold: true, size: 28, color: '1565C0', font: 'Calibri' })], spacing: { after: 200 } }),
-          new Paragraph({ children: [new TextRun({ text: 'Data: ' + formatDate(new Date()), size: 20, color: '666666', font: 'Calibri' })], spacing: { after: 400 } }),
-          ...paragraphs
-        ]
-      }]
-    });
-    const blob = await Packer.toBlob(doc);
-    const name = sanitizeFilename(docName) + '.docx';
-    downloadBlob(blob, name);
-    await saveDocRecord(name, text, 'word');
-    showToast('Word exportado!');
-  } catch (err) { showToast('Erro ao gerar Word: ' + err.message); }
-}
-
-/* ===== EXPORTAR EXCEL ===== */
-$('btnExportExcel').addEventListener('click', () => exportExcel($('ocrText').innerText.trim(), $('ocrDocName').value));
-$('btnViewExportExcel').addEventListener('click', () => {
-  if (viewingDoc) exportExcel(viewingDoc.text, viewingDoc.name);
-});
-
-function exportExcel(text, docName = 'Planilha') {
-  if (!text) { showToast('Nenhum texto para exportar'); return; }
-  try {
-    const lines = text.split('\n').filter(l => l.trim());
-    const data = lines.map(line => {
-      if (line.includes('|')) return line.split('|').map(c => c.trim()).filter(Boolean);
-      const nums = line.match(/[\d.,]+/g);
-      if (nums && nums.length > 1) return [line.replace(/[\d.,]+/g, '').trim(), ...nums];
-      return [line];
-    });
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-      [docName], ['Data: ' + formatDate(new Date())], [], ...data
-    ]);
-    ws['!cols'] = [{ wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'Documento');
-    const name = sanitizeFilename(docName) + '.xlsx';
-    XLSX.writeFile(wb, name);
-    saveDocRecord(name, text, 'excel');
-    showToast('Excel exportado!');
-  } catch (err) { showToast('Erro ao gerar Excel: ' + err.message); }
-}
-
-/* ===== SALVAR ===== */
+$('btnExportWord').addEventListener('click', () => { if (requirePremium()) exportWord($('ocrText').innerText.trim(), $('ocrDocName').value); });
+$('btnExportExcel').addEventListener('click', () => { if (requirePremium()) exportExcel($('ocrText').innerText.trim(), $('ocrDocName').value); });
 $('btnSaveDoc').addEventListener('click', async () => {
+  if (!requirePremium()) return;
   const text = $('ocrText').innerText.trim();
   if (!text) { showToast('Nenhum texto para salvar'); return; }
   const name = ($('ocrDocName').value.trim() || 'Documento') + (outputMode === 'excel' ? '.xlsx' : '.docx');
@@ -548,15 +556,57 @@ $('btnSaveDoc').addEventListener('click', async () => {
   showToast('Documento salvo!');
 });
 
+$('btnViewExportWord').addEventListener('click', () => { if (viewingDoc && requirePremium()) exportWord(viewingDoc.text, viewingDoc.name); });
+$('btnViewExportExcel').addEventListener('click', () => { if (viewingDoc && requirePremium()) exportExcel(viewingDoc.text, viewingDoc.name); });
+
+async function exportWord(text, docName = 'Documento') {
+  if (!text) { showToast('Nenhum texto para exportar'); return; }
+  try {
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+    const lines = text.split('\n').filter(l => l.trim());
+    const paragraphs = lines.map((line, i) =>
+      new Paragraph({ children: [new TextRun({ text: line, size: 24, font: 'Calibri' })], spacing: { after: 160 },
+        ...(i === 0 ? { heading: HeadingLevel.HEADING_2 } : {}) }));
+    const doc = new Document({ sections: [{ children: [
+      new Paragraph({ children: [new TextRun({ text: docName, bold: true, size: 28, color: '1565C0', font: 'Calibri' })], spacing: { after: 200 } }),
+      new Paragraph({ children: [new TextRun({ text: 'Data: ' + formatDate(new Date()), size: 20, color: '666666', font: 'Calibri' })], spacing: { after: 400 } }),
+      ...paragraphs
+    ]}] });
+    const blob = await Packer.toBlob(doc);
+    downloadBlob(blob, sanitizeFilename(docName) + '.docx');
+    await saveDocRecord(sanitizeFilename(docName) + '.docx', text, 'word');
+    showToast('Word exportado!');
+  } catch (err) { showToast('Erro: ' + err.message); }
+}
+
+function exportExcel(text, docName = 'Planilha') {
+  if (!text) { showToast('Nenhum texto'); return; }
+  try {
+    const lines = text.split('\n').filter(l => l.trim());
+    const data  = lines.map(line => {
+      if (line.includes('|')) return line.split('|').map(c => c.trim()).filter(Boolean);
+      const nums = line.match(/[\d.,]+/g);
+      if (nums && nums.length > 1) return [line.replace(/[\d.,]+/g,'').trim(), ...nums];
+      return [line];
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([[docName],['Data: ' + formatDate(new Date())],[], ...data]);
+    ws['!cols'] = [{ wch: 40 },{ wch: 20 },{ wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Documento');
+    XLSX.writeFile(wb, sanitizeFilename(docName) + '.xlsx');
+    saveDocRecord(sanitizeFilename(docName) + '.xlsx', text, 'excel');
+    showToast('Excel exportado!');
+  } catch (err) { showToast('Erro: ' + err.message); }
+}
+
 /* ===== PERSISTÊNCIA ===== */
 async function saveDocRecord(name, text, type) {
   const record = { id: crypto.randomUUID(), name, text, type, createdAt: new Date().toISOString(), userId: currentUser?.id || null };
   if (type === 'excel') { sheets.unshift(record); saveLocal('scribble_sheets', sheets); renderSheets(); }
   else                   { docs.unshift(record);   saveLocal('scribble_docs',   docs);   renderDocs(); }
   if (currentUser) {
-    try {
-      await db.from('documents').insert({ id: record.id, name, text, type, user_id: currentUser.id, created_at: record.createdAt });
-    } catch {}
+    try { await db.from('documents').insert({ id: record.id, name, text, type, user_id: currentUser.id, created_at: record.createdAt }); }
+    catch {}
   }
 }
 
@@ -564,28 +614,29 @@ function saveLocal(key, data) { try { localStorage.setItem(key, JSON.stringify(d
 function loadLocal(key) { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } }
 
 async function loadDocs() {
-  docs   = loadLocal('scribble_docs');
-  sheets = loadLocal('scribble_sheets');
+  docs = loadLocal('scribble_docs'); sheets = loadLocal('scribble_sheets');
   renderDocs(); renderSheets();
   if (currentUser) await syncCloud();
+
+  // Verifica pendência de ativação premium
+  const pendingPlan  = localStorage.getItem('scribble_pending_plan');
+  const pendingEmail = localStorage.getItem('scribble_pending_email');
+  if (pendingPlan && pendingEmail && currentUser?.email === pendingEmail) {
+    await activatePremium(pendingPlan);
+  }
 }
 
-/* ===== SINCRONIZAR COM NUVEM ===== */
 async function syncCloud() {
   if (!currentUser) { showToast('Faça login para sincronizar'); openProfile(); return; }
   try {
     showToast('Sincronizando...');
-    const { data, error } = await db.from('documents')
-      .select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    const { data, error } = await db.from('documents').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
     if (error) throw error;
     if (data?.length) {
       const remote = data.map(r => ({ id: r.id, name: r.name, text: r.text, type: r.type, createdAt: r.created_at }));
-      const wordDocs = remote.filter(d => d.type !== 'excel');
-      const xlsDocs  = remote.filter(d => d.type === 'excel');
-      docs   = mergeById(docs,   wordDocs);
-      sheets = mergeById(sheets, xlsDocs);
-      saveLocal('scribble_docs',   docs);
-      saveLocal('scribble_sheets', sheets);
+      docs   = mergeById(docs,   remote.filter(d => d.type !== 'excel'));
+      sheets = mergeById(sheets, remote.filter(d => d.type === 'excel'));
+      saveLocal('scribble_docs', docs); saveLocal('scribble_sheets', sheets);
       renderDocs(); renderSheets();
     }
     showToast(`Sincronizado! ${docs.length + sheets.length} documento(s)`);
@@ -598,24 +649,20 @@ function mergeById(local, remote) {
   return [...map.values()].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
-/* ===== RENDER DOCS ===== */
+/* ===== RENDER ===== */
 function renderDocs() {
-  const list = $('docList');
-  const q = searchQuery;
+  const list = $('docList'), q = searchQuery;
   const filtered = docs.filter(d => !q || d.name.toLowerCase().includes(q) || d.text?.toLowerCase().includes(q));
-  $('badgeDocs').textContent = docs.length;
-  $('statDocs').textContent  = docs.length;
+  $('badgeDocs').textContent = docs.length; $('statDocs').textContent = docs.length;
   $('emptyDocs').classList.toggle('hidden', filtered.length > 0);
   [...list.querySelectorAll('.doc-item')].forEach(el => el.remove());
   filtered.forEach(doc => list.appendChild(docItemEl(doc, 'word')));
 }
 
 function renderSheets() {
-  const list = $('sheetList');
-  const q = searchQuery;
+  const list = $('sheetList'), q = searchQuery;
   const filtered = sheets.filter(d => !q || d.name.toLowerCase().includes(q) || d.text?.toLowerCase().includes(q));
-  $('badgeSheets').textContent = sheets.length;
-  $('statSheets').textContent  = sheets.length;
+  $('badgeSheets').textContent = sheets.length; $('statSheets').textContent = sheets.length;
   $('emptySheets').classList.toggle('hidden', filtered.length > 0);
   [...list.querySelectorAll('.doc-item')].forEach(el => el.remove());
   filtered.forEach(doc => list.appendChild(docItemEl(doc, 'excel')));
@@ -625,9 +672,7 @@ function docItemEl(doc, type) {
   const el = document.createElement('div');
   el.className = 'doc-item';
   el.innerHTML = `
-    <div class="doc-icon ${type}">
-      <span class="material-icons-round">${type === 'excel' ? 'table_chart' : 'description'}</span>
-    </div>
+    <div class="doc-icon ${type}"><span class="material-icons-round">${type === 'excel' ? 'table_chart' : 'description'}</span></div>
     <div class="doc-info">
       <div class="doc-name">${escHtml(doc.name)}</div>
       <div class="doc-meta">${formatDate(new Date(doc.createdAt))} · ${type === 'excel' ? 'Excel' : 'Word'}</div>
@@ -636,8 +681,7 @@ function docItemEl(doc, type) {
     <div class="doc-actions">
       <button class="icon-btn small" title="Compartilhar"><span class="material-icons-round">share</span></button>
       <button class="icon-btn small" title="Excluir"><span class="material-icons-round">delete_outline</span></button>
-    </div>
-  `;
+    </div>`;
   const [btnShare, btnDel] = el.querySelectorAll('.doc-actions .icon-btn');
   btnShare.addEventListener('click', e => { e.stopPropagation(); shareText(doc.text, doc.name); });
   btnDel.addEventListener('click',   e => { e.stopPropagation(); deleteDoc(doc.id, type); });
@@ -652,97 +696,67 @@ function deleteDoc(id, type) {
   showToast('Documento excluído');
 }
 
-/* ===== VISUALIZAR DOCUMENTO ===== */
+/* ===== VISUALIZAR ===== */
 function openViewModal(doc, type) {
   viewingDoc = doc;
   $('viewDocName').textContent = doc.name;
   $('viewDocMeta').textContent = formatDate(new Date(doc.createdAt)) + ' · ' + (type === 'excel' ? 'Excel' : 'Word');
   $('viewDocText').textContent = doc.text || '(sem texto)';
-  const icon = $('viewDocIcon');
-  icon.className = 'doc-icon ' + type;
-  icon.innerHTML = `<span class="material-icons-round">${type === 'excel' ? 'table_chart' : 'description'}</span>`;
+  $('viewDocIcon').className   = 'doc-icon ' + type;
+  $('viewDocIcon').innerHTML   = `<span class="material-icons-round">${type === 'excel' ? 'table_chart' : 'description'}</span>`;
   $('modalView').classList.remove('hidden');
 }
 
-$('btnCloseView').addEventListener('click',  () => { $('modalView').classList.add('hidden'); viewingDoc = null; });
+$('btnCloseView').addEventListener('click', () => { $('modalView').classList.add('hidden'); viewingDoc = null; });
 $('modalView').addEventListener('click', e => { if (e.target === $('modalView')) { $('modalView').classList.add('hidden'); viewingDoc = null; } });
-
 $('btnViewRename').addEventListener('click', () => {
-  if (!viewingDoc) return;
-  renamingDoc = viewingDoc;
+  if (!viewingDoc) return; renamingDoc = viewingDoc;
   $('renameInput').value = viewingDoc.name.replace(/\.(docx|xlsx)$/i, '');
   $('modalRename').classList.remove('hidden');
 });
-
-$('btnViewShare').addEventListener('click',    () => { if (viewingDoc) shareText(viewingDoc.text, viewingDoc.name); });
+$('btnViewShare').addEventListener('click',     () => { if (viewingDoc) shareText(viewingDoc.text, viewingDoc.name); });
 $('btnViewShareFull').addEventListener('click', () => { if (viewingDoc) shareText(viewingDoc.text, viewingDoc.name); });
-$('btnViewExport').addEventListener('click',   () => {
-  if (!viewingDoc) return;
-  if (viewingDoc.type === 'excel') exportExcel(viewingDoc.text, viewingDoc.name);
-  else exportWord(viewingDoc.text, viewingDoc.name);
-});
+$('btnViewExport').addEventListener('click',    () => { if (!viewingDoc || !requirePremium()) return; viewingDoc.type === 'excel' ? exportExcel(viewingDoc.text, viewingDoc.name) : exportWord(viewingDoc.text, viewingDoc.name); });
 
 /* ===== RENOMEAR ===== */
 $('btnCancelRename').addEventListener('click', () => { $('modalRename').classList.add('hidden'); renamingDoc = null; });
-
 $('btnConfirmRename').addEventListener('click', () => {
   if (!renamingDoc) return;
   const newBase = $('renameInput').value.trim();
   if (!newBase) { showToast('Digite um nome válido'); return; }
   const ext = renamingDoc.type === 'excel' ? '.xlsx' : '.docx';
   const newName = newBase + ext;
-
-  // Atualiza lista local
   const list = renamingDoc.type === 'excel' ? sheets : docs;
   const item = list.find(d => d.id === renamingDoc.id);
-  if (item) {
-    item.name = newName;
-    if (renamingDoc.type === 'excel') saveLocal('scribble_sheets', sheets);
-    else                               saveLocal('scribble_docs',   docs);
-  }
-
-  // Atualiza Supabase
+  if (item) { item.name = newName; renamingDoc.type === 'excel' ? saveLocal('scribble_sheets', sheets) : saveLocal('scribble_docs', docs); }
   if (currentUser) db.from('documents').update({ name: newName }).eq('id', renamingDoc.id).then(() => {});
-
-  // Atualiza modal de visualização
-  if (viewingDoc?.id === renamingDoc.id) {
-    viewingDoc.name = newName;
-    $('viewDocName').textContent = newName;
-  }
-
-  $('modalRename').classList.add('hidden');
-  renamingDoc = null;
+  if (viewingDoc?.id === renamingDoc.id) { viewingDoc.name = newName; $('viewDocName').textContent = newName; }
+  $('modalRename').classList.add('hidden'); renamingDoc = null;
   renderDocs(); renderSheets();
   showToast('Documento renomeado!');
 });
-
 $('renameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnConfirmRename').click(); });
 
 /* ===== PERFIL / AUTH ===== */
 $('btnProfile').addEventListener('click', openProfile);
 $('navProfile').addEventListener('click', openProfile);
 
-function openProfile() {
-  renderProfile();
-  $('modalProfile').classList.remove('hidden');
-}
+function openProfile() { renderProfile(); $('modalProfile').classList.remove('hidden'); }
 
 function renderProfile() {
   if (currentUser) {
-    $('authForm').classList.add('hidden');
-    $('userPanel').classList.remove('hidden');
+    $('authForm').classList.add('hidden'); $('userPanel').classList.remove('hidden');
     $('profileTitle').textContent = 'Meu Perfil';
     $('userEmail').textContent    = currentUser.email;
-    const since = new Date(currentUser.created_at || Date.now());
-    $('userSince').textContent    = formatDate(since);
-    $('statDocs').textContent     = docs.length;
-    $('statSheets').textContent   = sheets.length;
+    $('userSince').textContent    = formatDate(new Date(currentUser.created_at || Date.now()));
+    $('statDocs').textContent     = docs.length; $('statSheets').textContent = sheets.length;
     $('statCloud').innerHTML      = '<span class="material-icons-round" style="font-size:20px;color:var(--green)">cloud_done</span>';
+    updatePremiumUI();
   } else {
-    $('authForm').classList.remove('hidden');
-    $('userPanel').classList.add('hidden');
+    $('authForm').classList.remove('hidden'); $('userPanel').classList.add('hidden');
     $('profileTitle').textContent = 'Entrar na conta';
     $('authError').classList.add('hidden');
+    switchAuthTab('login');
   }
 }
 
@@ -750,34 +764,34 @@ $('btnLogin').addEventListener('click', async () => {
   const email = $('authEmail').value.trim();
   const pass  = $('authPassword').value;
   if (!email || !pass) { showAuthError('Preencha e-mail e senha'); return; }
-  $('btnLogin').disabled = true;
-  $('btnLogin').textContent = 'Entrando...';
-  const { error } = await db.auth.signInWithPassword({ email, password: pass });
-  $('btnLogin').disabled = false;
-  $('btnLogin').innerHTML = '<span class="material-icons-round">login</span> Entrar';
-  if (error) { showAuthError(error.message); return; }
-  $('modalProfile').classList.add('hidden');
-  showToast('Bem-vindo(a)!');
-  loadDocs();
-});
 
-$('btnRegister').addEventListener('click', async () => {
-  const email = $('authEmail').value.trim();
-  const pass  = $('authPassword').value;
-  if (!email || !pass) { showAuthError('Preencha e-mail e senha'); return; }
-  if (pass.length < 6)  { showAuthError('Senha mínima de 6 caracteres'); return; }
-  $('btnRegister').disabled = true;
-  const { error } = await db.auth.signUp({ email, password: pass });
-  $('btnRegister').disabled = false;
-  if (error) { showAuthError(error.message); return; }
-  showToast('Conta criada! Verifique seu e-mail.');
-  $('modalProfile').classList.add('hidden');
+  const isRegister = $('tabRegister').classList.contains('active');
+
+  if (isRegister) {
+    // Verificar LGPD
+    if (!$('lgpdConsent').checked) { showAuthError('Aceite a Política de Privacidade (LGPD) para criar conta'); return; }
+    $('btnLogin').disabled = true; $('btnLogin').textContent = 'Criando...';
+    const { error } = await db.auth.signUp({ email, password: pass });
+    $('btnLogin').disabled = false;
+    $('btnLogin').innerHTML = '<span class="material-icons-round">person_add</span>Criar conta';
+    if (error) { showAuthError(error.message); return; }
+    showToast('Conta criada! Verifique seu e-mail.');
+    $('modalProfile').classList.add('hidden');
+  } else {
+    $('btnLogin').disabled = true; $('btnLogin').textContent = 'Entrando...';
+    const { error } = await db.auth.signInWithPassword({ email, password: pass });
+    $('btnLogin').disabled = false;
+    $('btnLogin').innerHTML = '<span class="material-icons-round">login</span>Entrar';
+    if (error) { showAuthError(error.message); return; }
+    $('modalProfile').classList.add('hidden');
+    showToast('Bem-vindo(a)!');
+    loadDocs();
+  }
 });
 
 $('btnLogout').addEventListener('click', async () => {
-  await db.auth.signOut();
-  currentUser = null;
-  showToast('Até logo!');
+  await db.auth.signOut(); currentUser = null; isPremium = false;
+  updatePremiumUI(); showToast('Até logo!');
   $('modalProfile').classList.add('hidden');
 });
 
@@ -785,35 +799,23 @@ $('btnCancelProfile').addEventListener('click', () => $('modalProfile').classLis
 $('btnCloseProfile').addEventListener('click',  () => $('modalProfile').classList.add('hidden'));
 $('modalProfile').addEventListener('click', e => { if (e.target === $('modalProfile')) $('modalProfile').classList.add('hidden'); });
 
-function showAuthError(msg) {
-  $('authError').textContent = msg;
-  $('authError').classList.remove('hidden');
-}
+function showAuthError(msg) { $('authError').textContent = msg; $('authError').classList.remove('hidden'); }
 
 /* ===== UTILS ===== */
-function formatDate(d) {
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
+function formatDate(d) { return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 function dateSlug() {
   const n = new Date();
-  return [String(n.getDate()).padStart(2,'0'), String(n.getMonth()+1).padStart(2,'0'), n.getFullYear(),
-          String(n.getHours()).padStart(2,'0'), String(n.getMinutes()).padStart(2,'0')].join('');
+  return [n.getDate(), n.getMonth()+1, n.getFullYear(), n.getHours(), n.getMinutes()].map(v => String(v).padStart(2,'0')).join('');
 }
-function sanitizeFilename(name) {
-  return name.replace(/[\\/:*?"<>|]/g, '_').replace(/\.(docx|xlsx)$/i, '').trim() || 'documento';
-}
-function escHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function sanitizeFilename(n) { return n.replace(/[\\/:*?"<>|]/g,'_').replace(/\.(docx|xlsx)$/i,'').trim() || 'documento'; }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
 }
 
 let toastTimer;
 function showToast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.remove('hidden');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
 }
