@@ -168,24 +168,39 @@ async function triggerInstall() {
 /* ===== INIT ===== */
 window.addEventListener('load', async () => {
   loadSettings();
-  checkPaymentReturn();   // verifica retorno do Stripe
+  checkPaymentReturn();
   await initSupabase();
   setTimeout(() => {
     $('splash').style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(async () => {
       $('splash').classList.add('hidden');
-      $('app').classList.remove('hidden');
-      loadDocs();
-      // Mostra tutorial na primeira visita
-      if (!localStorage.getItem('scribble_onboarded')) {
-        setTimeout(() => {
-          $('modalHelp').classList.remove('hidden');
-          localStorage.setItem('scribble_onboarded', '1');
-        }, 600);
+      if (currentUser) {
+        showApp();
+      } else {
+        showAuthScreen();
       }
     }, 500);
   }, 1800);
 });
+
+function showApp() {
+  $('authScreen').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  loadDocs();
+  updateAdminUI();
+  if (!localStorage.getItem('scribble_onboarded')) {
+    setTimeout(() => {
+      $('modalHelp').classList.remove('hidden');
+      localStorage.setItem('scribble_onboarded', '1');
+    }, 700);
+  }
+}
+
+function showAuthScreen() {
+  $('app').classList.add('hidden');
+  $('authScreen').classList.remove('hidden');
+  switchAuthScreenTab('login');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Ajuda
@@ -289,10 +304,90 @@ async function initSupabase() {
     currentUser = session?.user || null;
     checkPremium(currentUser);
     updatePremiumUI();
+    updateAdminUI();
     renderProfile();
   });
   updatePremiumUI();
 }
+
+/* ===== ADMIN ===== */
+function isAdmin() {
+  return currentUser?.email === ADMIN_EMAIL;
+}
+
+function updateAdminUI() {
+  const navAdmin = $('navAdmin');
+  if (!navAdmin) return;
+  if (isAdmin()) {
+    navAdmin.classList.remove('hidden');
+    loadAdminData();
+  } else {
+    navAdmin.classList.add('hidden');
+  }
+}
+
+async function loadAdminData() {
+  try {
+    // Documentos
+    const { data: allDocs, error: docsErr } = await db.from('documents').select('*').order('created_at', { ascending: false });
+    if (!docsErr && allDocs) {
+      $('adminStatDocs').textContent = allDocs.length;
+      renderAdminDocs(allDocs);
+    }
+
+    // Usuários via auth (requer service role — usamos metadados disponíveis)
+    $('adminStatUsers').textContent = '—';
+    $('adminStatPremium').textContent = '—';
+    renderAdminUsers([]);
+
+  } catch (e) { console.error('Admin load error', e); }
+}
+
+function renderAdminDocs(docs) {
+  const list = $('adminDocList');
+  if (!docs.length) { list.innerHTML = '<div class="loading-users"><span>Nenhum documento</span></div>'; return; }
+  list.innerHTML = docs.slice(0, 50).map(d => `
+    <div class="admin-doc-row">
+      <span class="material-icons-round" style="font-size:18px;color:var(--blue-glow);flex-shrink:0">${d.type === 'excel' ? 'table_chart' : 'description'}</span>
+      <span class="admin-doc-name">${escHtml(d.name || 'sem nome')}</span>
+      <span class="admin-doc-meta">${d.created_at ? formatDate(new Date(d.created_at)) : ''}</span>
+      <button class="icon-btn small admin-doc-del" data-id="${d.id}" title="Excluir">
+        <span class="material-icons-round" style="font-size:18px;color:var(--red)">delete</span>
+      </button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.admin-doc-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Excluir este documento?')) return;
+      const id = btn.dataset.id;
+      await db.from('documents').delete().eq('id', id);
+      btn.closest('.admin-doc-row').remove();
+      showToast('Documento excluído');
+    });
+  });
+}
+
+function renderAdminUsers(users) {
+  const list = $('adminUserList');
+  list.innerHTML = '<div class="loading-users"><span class="material-icons-round" style="font-size:16px">info</span><span>Lista de usuários disponível via Supabase Dashboard → Authentication → Users</span></div>';
+}
+
+// Admin: salvar preços
+document.addEventListener('DOMContentLoaded', () => {
+  $('btnSavePriceMonthly')?.addEventListener('click', () => {
+    const v = parseFloat($('adminPriceMonthly').value);
+    if (!isNaN(v)) { localStorage.setItem('sc_price_monthly', v); showToast(`Preço mensal: R$ ${v.toFixed(2)}`); }
+  });
+  $('btnSavePriceAnnual')?.addEventListener('click', () => {
+    const v = parseFloat($('adminPriceAnnual').value);
+    if (!isNaN(v)) { localStorage.setItem('sc_price_annual', v); showToast(`Preço anual: R$ ${v.toFixed(2)}`); }
+  });
+  $('btnSaveTrial')?.addEventListener('click', () => {
+    const v = parseInt($('adminTrialDays').value);
+    if (!isNaN(v)) { localStorage.setItem('sc_trial_days', v); showToast(`Período de teste: ${v} dias`); }
+  });
+});
 
 /* ===== STRIPE PAGAMENTO ===== */
 function openPayment(mode) {
@@ -770,6 +865,135 @@ $('btnConfirmRename').addEventListener('click', () => {
 });
 $('renameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnConfirmRename').click(); });
 
+/* ===== AUTH SCREEN ===== */
+function switchAuthScreenTab(tab) {
+  $('authTabLogin').classList.toggle('active',    tab === 'login');
+  $('authTabRegister').classList.toggle('active', tab === 'register');
+  $('authFormLogin').classList.toggle('hidden',   tab !== 'login');
+  $('authFormRegister').classList.toggle('hidden',tab !== 'register');
+  $('authFormConfirm').classList.add('hidden');
+  $('loginError').classList.add('hidden');
+  $('registerError').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('authTabLogin')?.addEventListener('click',    () => switchAuthScreenTab('login'));
+  $('authTabRegister')?.addEventListener('click', () => switchAuthScreenTab('register'));
+
+  // Visitante
+  $('btnVisitor')?.addEventListener('click',  enterAsVisitor);
+  $('btnVisitor2')?.addEventListener('click', enterAsVisitor);
+
+  // Show/hide senha — login
+  $('btnToggleLoginPwd')?.addEventListener('click', () => togglePwd('loginPassword', 'loginEyeIcon'));
+  // Show/hide senha — cadastro
+  $('btnToggleRegPwd')?.addEventListener('click',  () => togglePwd('regPassword',        'regEyeIcon'));
+  $('btnToggleRegPwd2')?.addEventListener('click', () => togglePwd('regPasswordConfirm', 'regEyeIcon2'));
+
+  // LGPD no cadastro
+  $('btnRegLgpd')?.addEventListener('click', e => { e.preventDefault(); $('modalLgpd').classList.remove('hidden'); });
+
+  // Login
+  $('btnDoLogin')?.addEventListener('click', doLogin);
+  $('loginPassword')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  // Cadastro
+  $('btnDoRegister')?.addEventListener('click', doRegister);
+
+  // Após confirmação
+  $('btnBackToLogin')?.addEventListener('click', () => switchAuthScreenTab('login'));
+  $('btnResendEmail')?.addEventListener('click', async () => {
+    const email = $('confirmEmailAddr').textContent;
+    if (!email) return;
+    await db.auth.resend({ type: 'signup', email });
+    showToast('E-mail reenviado!');
+  });
+});
+
+function togglePwd(inputId, iconId) {
+  const inp  = $(inputId);
+  const icon = $(iconId);
+  const hidden = inp.type === 'password';
+  inp.type      = hidden ? 'text' : 'password';
+  icon.textContent = hidden ? 'visibility_off' : 'visibility';
+}
+
+function enterAsVisitor() {
+  currentUser = null; isPremium = false;
+  showApp();
+}
+
+async function doLogin() {
+  const email = $('loginEmail').value.trim();
+  const pass  = $('loginPassword').value;
+  if (!email || !pass) { showAuthScreenError('loginError', 'Preencha e-mail e senha'); return; }
+
+  const btn = $('btnDoLogin');
+  btn.disabled = true; btn.innerHTML = '<span class="material-icons-round spinning">sync</span>Entrando...';
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">login</span>Entrar';
+
+  if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      showAuthScreenError('loginError', 'E-mail não confirmado. Verifique sua caixa de entrada.');
+    } else if (error.message.includes('Invalid login')) {
+      showAuthScreenError('loginError', 'E-mail ou senha incorretos.');
+    } else {
+      showAuthScreenError('loginError', error.message);
+    }
+    return;
+  }
+
+  currentUser = data.user;
+  checkPremium(currentUser);
+  showApp();
+  showToast('Bem-vindo(a)! 🎉');
+}
+
+async function doRegister() {
+  const name  = $('regName').value.trim();
+  const email = $('regEmail').value.trim();
+  const pass  = $('regPassword').value;
+  const pass2 = $('regPasswordConfirm').value;
+  const lgpd  = $('regLgpdConsent').checked;
+
+  if (!email)            { showAuthScreenError('registerError', 'Informe seu e-mail'); return; }
+  if (!pass)             { showAuthScreenError('registerError', 'Informe uma senha'); return; }
+  if (pass.length < 6)   { showAuthScreenError('registerError', 'Senha mínima de 6 caracteres'); return; }
+  if (pass !== pass2)    { showAuthScreenError('registerError', 'As senhas não coincidem'); return; }
+  if (!lgpd)             { showAuthScreenError('registerError', 'Aceite a Política de Privacidade para continuar'); return; }
+
+  const btn = $('btnDoRegister');
+  btn.disabled = true; btn.innerHTML = '<span class="material-icons-round spinning">sync</span>Criando conta...';
+
+  const { error } = await db.auth.signUp({
+    email, password: pass,
+    options: {
+      data: { name: name || email.split('@')[0], lgpd_accepted: true, lgpd_date: new Date().toISOString() },
+      emailRedirectTo: 'https://nelsonassembler-svg.github.io/scribble-converter/'
+    }
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">person_add</span>Criar minha conta';
+
+  if (error) { showAuthScreenError('registerError', error.message); return; }
+
+  // Mostra tela de confirmação
+  $('confirmEmailAddr').textContent = email;
+  $('authFormLogin').classList.add('hidden');
+  $('authFormRegister').classList.add('hidden');
+  $('authFormConfirm').classList.remove('hidden');
+}
+
+function showAuthScreenError(id, msg) {
+  const el = $(id);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
 /* ===== PERFIL / AUTH ===== */
 $('btnProfile').addEventListener('click', openProfile);
 $('navProfile').addEventListener('click', openProfile);
@@ -823,9 +1047,12 @@ $('btnLogin').addEventListener('click', async () => {
 });
 
 $('btnLogout').addEventListener('click', async () => {
-  await db.auth.signOut(); currentUser = null; isPremium = false;
-  updatePremiumUI(); showToast('Até logo!');
+  await db.auth.signOut();
+  currentUser = null; isPremium = false;
+  updatePremiumUI(); updateAdminUI();
   $('modalProfile').classList.add('hidden');
+  showToast('Até logo!');
+  setTimeout(() => showAuthScreen(), 300);
 });
 
 $('btnCancelProfile').addEventListener('click', () => $('modalProfile').classList.add('hidden'));

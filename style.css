@@ -540,6 +540,160 @@ html, body {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ===== TELA DE AUTENTICAÇÃO ===== */
+#authScreen {
+  position: fixed; inset: 0; z-index: 200;
+  background: linear-gradient(160deg, #0D1B2A 0%, #1A3050 60%, #0D1B2A 100%);
+  overflow-y: auto;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 20px 0 40px;
+}
+.auth-bg { width: 100%; max-width: 440px; padding: 0 20px; }
+
+.auth-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 24px 28px;
+  backdrop-filter: blur(12px);
+}
+
+.auth-logo { text-align: center; margin-bottom: 28px; }
+.auth-logo-icon {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 8px 32px rgba(0,180,216,.3);
+}
+.auth-logo-icon .material-icons-round { font-size: 36px; color: #fff; }
+.auth-logo h1 { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.auth-logo p  { font-size: 13px; color: var(--white-70); margin-top: 4px; }
+
+.auth-tabs {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+.auth-tab {
+  flex: 1; padding: 12px; background: none; border: none;
+  color: var(--white-40); font-size: 15px; font-weight: 600;
+  font-family: var(--font); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.auth-tab.active { color: var(--blue-glow); border-bottom-color: var(--blue-light); }
+
+.auth-submit {
+  width: 100%; justify-content: center;
+  padding: 14px; font-size: 15px; margin-top: 8px;
+}
+.auth-visitor {
+  width: 100%; justify-content: center;
+  margin-top: 10px; font-size: 13px;
+  color: var(--white-40);
+}
+.auth-visitor:hover { color: var(--white-70); }
+.auth-screen-error {
+  color: var(--red); font-size: 13px;
+  background: rgba(244,67,54,.08);
+  border: 1px solid rgba(244,67,54,.2);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px; margin-bottom: 10px;
+}
+.field-hint { font-size: 11px; color: var(--white-40); font-weight: 400; }
+
+/* CONFIRMAR E-MAIL */
+.confirm-email-art {
+  text-align: center; margin: 8px 0 20px;
+}
+.confirm-email-art .material-icons-round {
+  font-size: 72px;
+  background: linear-gradient(135deg, var(--blue-light), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.confirm-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 10px; }
+.confirm-sub   { font-size: 14px; color: var(--white-70); text-align: center; line-height: 1.6; margin-bottom: 10px; }
+.confirm-sub strong { color: var(--blue-glow); }
+.confirm-tip   { font-size: 12px; color: var(--white-40); text-align: center; margin-bottom: 20px; line-height: 1.6; }
+
+/* ===== ADMIN ===== */
+.admin-stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-bottom: 20px;
+}
+.admin-stat-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 10px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.admin-stat-card .material-icons-round { font-size: 22px; color: var(--blue-glow); }
+.admin-stat-val { font-size: 24px; font-weight: 800; color: var(--white); }
+.admin-stat-lbl { font-size: 11px; color: var(--white-40); }
+
+.admin-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--white-40);
+  margin: 20px 0 8px;
+}
+.admin-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 4px;
+}
+.admin-price-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.admin-price-row:last-child { border-bottom: none; }
+.admin-price-row label { font-size: 13px; flex: 1; }
+.admin-input {
+  width: 90px; background: rgba(0,0,0,.2);
+  border: 1px solid var(--border); color: var(--white);
+  border-radius: var(--radius-xs); padding: 7px 10px;
+  font-size: 14px; font-family: var(--font); outline: none;
+  text-align: right;
+}
+.admin-input:focus { border-color: var(--blue-light); }
+
+.admin-user-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.admin-user-row:last-child { border-bottom: none; }
+.admin-user-email { font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-plan {
+  font-size: 11px; font-weight: 700; padding: 3px 8px;
+  border-radius: 99px; flex-shrink: 0;
+}
+.admin-user-plan.premium { background: rgba(171,71,188,.2); color: #CE93D8; }
+.admin-user-plan.visitor  { background: var(--white-08); color: var(--white-40); }
+.admin-user-plan.admin    { background: rgba(255,215,0,.15); color: gold; }
+
+.admin-doc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.admin-doc-row:last-child { border-bottom: none; }
+.admin-doc-name { font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-doc-meta { font-size: 11px; color: var(--white-40); flex-shrink: 0; }
+.admin-doc-del  { flex-shrink: 0; }
+
+.loading-users {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px; color: var(--white-40); font-size: 13px;
+}
+
+.pricing-info { display: flex; flex-direction: column; gap: 0; }
+.pricing-info-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px; border-bottom: 1px solid var(--border);
+}
+.pricing-info-row:last-child { border-bottom: none; }
+.pricing-info-row .material-icons-round { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.pricing-info-row strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.pricing-info-row p { font-size: 12px; color: var(--white-70); line-height: 1.5; }
+.pricing-info-row.trial { background: rgba(0,200,83,.05); }
+
 /* ===== TEMA CLARO ===== */
 [data-theme="light"] {
   --navy:       #F0F4F8;

@@ -24,6 +24,111 @@
   </div>
 </div>
 
+<!-- ===== TELA DE AUTENTICAÇÃO ===== -->
+<div id="authScreen" class="hidden">
+  <div class="auth-bg">
+    <div class="auth-card">
+
+      <!-- Logo -->
+      <div class="auth-logo">
+        <div class="auth-logo-icon"><span class="material-icons-round">draw</span></div>
+        <h1>Scribble Converter</h1>
+        <p>Documentos manuscritos em segundos</p>
+      </div>
+
+      <!-- Abas Login / Cadastro -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="authTabLogin">Entrar</button>
+        <button class="auth-tab" id="authTabRegister">Criar conta</button>
+      </div>
+
+      <!-- ---- FORMULÁRIO LOGIN ---- -->
+      <div id="authFormLogin">
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <div class="password-wrap">
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+            <button class="icon-btn small pwd-toggle" id="btnToggleLoginPwd" type="button" tabindex="-1">
+              <span class="material-icons-round" id="loginEyeIcon">visibility</span>
+            </button>
+          </div>
+        </div>
+        <p class="auth-screen-error hidden" id="loginError"></p>
+        <button class="btn-primary large auth-submit" id="btnDoLogin">
+          <span class="material-icons-round">login</span>Entrar
+        </button>
+        <button class="btn-ghost auth-visitor" id="btnVisitor">
+          Continuar como Visitante
+        </button>
+      </div>
+
+      <!-- ---- FORMULÁRIO CADASTRO ---- -->
+      <div id="authFormRegister" class="hidden">
+        <div class="form-group">
+          <label>Nome completo</label>
+          <input type="text" id="regName" placeholder="Seu nome" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="regEmail" placeholder="seu@email.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Senha <span class="field-hint">(mínimo 6 caracteres)</span></label>
+          <div class="password-wrap">
+            <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password" />
+            <button class="icon-btn small pwd-toggle" id="btnToggleRegPwd" type="button" tabindex="-1">
+              <span class="material-icons-round" id="regEyeIcon">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirmar senha</label>
+          <div class="password-wrap">
+            <input type="password" id="regPasswordConfirm" placeholder="••••••••" autocomplete="new-password" />
+            <button class="icon-btn small pwd-toggle" id="btnToggleRegPwd2" type="button" tabindex="-1">
+              <span class="material-icons-round" id="regEyeIcon2">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div class="lgpd-check">
+          <label class="lgpd-label">
+            <input type="checkbox" id="regLgpdConsent" />
+            <span>Li e aceito a <a href="#" id="btnRegLgpd">Política de Privacidade (LGPD)</a> e os Termos de Uso do Scribble Converter.</span>
+          </label>
+        </div>
+        <p class="auth-screen-error hidden" id="registerError"></p>
+        <button class="btn-primary large auth-submit" id="btnDoRegister">
+          <span class="material-icons-round">person_add</span>Criar minha conta
+        </button>
+        <button class="btn-ghost auth-visitor" id="btnVisitor2">
+          Continuar como Visitante
+        </button>
+      </div>
+
+      <!-- ---- CONFIRMAR E-MAIL ---- -->
+      <div id="authFormConfirm" class="hidden">
+        <div class="confirm-email-art">
+          <span class="material-icons-round">mark_email_unread</span>
+        </div>
+        <h3 class="confirm-title">Verifique seu e-mail</h3>
+        <p class="confirm-sub">Enviamos um link de confirmação para<br><strong id="confirmEmailAddr"></strong></p>
+        <p class="confirm-tip">Clique no link do e-mail para ativar sua conta e depois volte aqui para entrar.</p>
+        <button class="btn-primary large auth-submit" id="btnBackToLogin">
+          <span class="material-icons-round">login</span>Já confirmei — Entrar
+        </button>
+        <button class="btn-ghost auth-visitor" id="btnResendEmail">
+          <span class="material-icons-round">send</span>Reenviar e-mail
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app" class="hidden">
 
@@ -384,6 +489,107 @@
 
     </section>
 
+    <!-- ABA: ADMIN (somente nelsontcmagalhaes@gmail.com) -->
+    <section id="tabAdmin" class="tab-section">
+      <div class="section-header">
+        <h2>Painel Admin</h2>
+        <span class="badge" style="background:gold;color:#000">👑</span>
+      </div>
+
+      <!-- Estatísticas -->
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+          <span class="material-icons-round">group</span>
+          <span class="admin-stat-val" id="adminStatUsers">—</span>
+          <span class="admin-stat-lbl">Usuários</span>
+        </div>
+        <div class="admin-stat-card">
+          <span class="material-icons-round">description</span>
+          <span class="admin-stat-val" id="adminStatDocs">—</span>
+          <span class="admin-stat-lbl">Documentos</span>
+        </div>
+        <div class="admin-stat-card">
+          <span class="material-icons-round">workspace_premium</span>
+          <span class="admin-stat-val" id="adminStatPremium">—</span>
+          <span class="admin-stat-lbl">Premium</span>
+        </div>
+      </div>
+
+      <!-- Preços -->
+      <div class="admin-section-title">Configurar Preços</div>
+      <div class="admin-card">
+        <div class="admin-price-row">
+          <label>Premium Mensal (R$)</label>
+          <input type="number" id="adminPriceMonthly" value="19.90" step="0.01" class="admin-input" />
+          <button class="btn-outline" id="btnSavePriceMonthly">Salvar</button>
+        </div>
+        <div class="admin-price-row">
+          <label>Premium Anual (R$)</label>
+          <input type="number" id="adminPriceAnnual" value="167.00" step="0.01" class="admin-input" />
+          <button class="btn-outline" id="btnSavePriceAnnual">Salvar</button>
+        </div>
+        <div class="admin-price-row">
+          <label>Dias de teste grátis</label>
+          <input type="number" id="adminTrialDays" value="7" min="0" max="30" class="admin-input" />
+          <button class="btn-outline" id="btnSaveTrial">Salvar</button>
+        </div>
+      </div>
+
+      <!-- Lista de usuários -->
+      <div class="admin-section-title">Usuários cadastrados</div>
+      <div class="admin-card" id="adminUserList">
+        <div class="loading-users">
+          <span class="material-icons-round spinning">refresh</span>
+          <span>Carregando...</span>
+        </div>
+      </div>
+
+      <!-- Todos os documentos -->
+      <div class="admin-section-title">Todos os documentos</div>
+      <div class="admin-card" id="adminDocList">
+        <div class="loading-users">
+          <span class="material-icons-round spinning">refresh</span>
+          <span>Carregando...</span>
+        </div>
+      </div>
+
+      <!-- Período de teste -->
+      <div class="admin-section-title">Modelo de preços & Teste</div>
+      <div class="admin-card">
+        <div class="pricing-info">
+          <div class="pricing-info-row">
+            <span class="material-icons-round">person</span>
+            <div>
+              <strong>Visitante (Grátis)</strong>
+              <p>5 digitalizações/mês · Sem exportar · Sem nuvem · Sem histórico ilimitado</p>
+            </div>
+          </div>
+          <div class="pricing-info-row">
+            <span class="material-icons-round" style="color:#AB47BC">workspace_premium</span>
+            <div>
+              <strong>Premium Mensal — R$ 19,90/mês</strong>
+              <p>Ilimitado · Exportar Word e Excel · Salvar na nuvem · Histórico completo</p>
+            </div>
+          </div>
+          <div class="pricing-info-row">
+            <span class="material-icons-round" style="color:gold">star</span>
+            <div>
+              <strong>Premium Anual — R$ 167,00/ano</strong>
+              <p>Tudo do mensal · Equivale a R$ 13,90/mês · Economiza R$ 71,80/ano</p>
+            </div>
+          </div>
+          <div class="pricing-info-row trial">
+            <span class="material-icons-round" style="color:var(--green)">free_cancellation</span>
+            <div>
+              <strong>Teste grátis — 7 dias</strong>
+              <p>Novos assinantes têm 7 dias grátis antes da primeira cobrança. Cancele a qualquer momento sem custo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
     <!-- RODAPÉ -->
     <div class="dev-footer" id="devFooter">
       <span class="material-icons-round dev-footer-icon">draw</span>
@@ -400,7 +606,7 @@
   <button class="fab" id="fabScan"><span class="material-icons-round">document_scanner</span></button>
 
   <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
+  <nav class="bottom-nav" id="bottomNav">
     <button class="nav-item active" data-tab="tabDocs">
       <span class="material-icons-round">description</span><span>Documentos</span>
     </button>
@@ -412,6 +618,9 @@
     </button>
     <button class="nav-item" data-tab="tabConfig">
       <span class="material-icons-round">settings</span><span>Config.</span>
+    </button>
+    <button class="nav-item hidden" id="navAdmin" data-tab="tabAdmin">
+      <span class="material-icons-round">admin_panel_settings</span><span>Admin</span>
     </button>
     <button class="nav-item" id="navProfile" data-tab="tabProfile">
       <span class="material-icons-round">person</span><span>Perfil</span>
