@@ -1405,88 +1405,15 @@ function showAudioResult(text, lang) {
   $('audioResultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ===== TRADUÇÃO (MyMemory API - gratuita) ===== */
-async function translateText(text, fromLang, toLang) {
-  if (!text.trim() || toLang === 'none') return text;
-  const from = fromLang.split('-')[0];
-  const to   = toLang.split('-')[0];
-  if (from === to) return text;
-  try {
-    showToast('Traduzindo...');
-    const chunks = [];
-    for (let i = 0; i < text.length; i += 490) chunks.push(text.slice(i, i + 490));
-    const translated = await Promise.all(chunks.map(async chunk => {
-      const url  = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}&de=nelsonassembrer@gmail.com`;
-      const res  = await fetch(url);
-      const data = await res.json();
-      return data.responseData?.translatedText || chunk;
-    }));
-    return translated.join(' ');
-  } catch {
-    showToast('Erro na tradução. Tente novamente.');
-    return text;
-  }
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
 }
 
-/* ===== ÁUDIO — ESTADO ===== */
-let recognition   = null;
-let recordTimer   = null;
-let recordSeconds = 0;
-let fullTranscript = '';
-let isRecording   = false;
-
-/* ===== ÁUDIO — INIT ===== */
-document.addEventListener('DOMContentLoaded', () => {
-  $('btnStartRecord')?.addEventListener('click', startRecording);
-  $('btnStopRecord')?.addEventListener('click',  stopRecording);
-  $('btnClearRecord')?.addEventListener('click', clearRecording);
-
-  $('audioUploadArea')?.addEventListener('click', () => $('audioFileInput')?.click());
-  $('audioFileInput')?.addEventListener('change', onAudioFileSelected);
-  $('btnTranscribeFile')?.addEventListener('click', transcribeAudioFile);
-
-  $('btnTranslateResult')?.addEventListener('click', async () => {
-    const text = $('audioResultText')?.innerText.trim();
-    if (!text) return;
-    const translated = await translateText(text, $('audioLangInput')?.value || 'en', 'pt-BR');
-    if ($('audioResultText')) $('audioResultText').textContent = translated;
-    if ($('audioResultLang')) $('audioResultLang').textContent = '🇧🇷 PT-BR';
-    showToast('Tradução concluída!');
-  });
-
-  $('btnAudioExportWord')?.addEventListener('click', () => {
-    const text = $('audioResultText')?.innerText.trim();
-    if (text && requirePremium()) exportWord(text, 'Transcricao_' + dateSlug());
-  });
-  $('btnAudioExportExcel')?.addEventListener('click', () => {
-    const text = $('audioResultText')?.innerText.trim();
-    if (text && requirePremium()) exportExcel(text, 'Transcricao_' + dateSlug());
-  });
-  $('btnAudioSave')?.addEventListener('click', async () => {
-    const text = $('audioResultText')?.innerText.trim();
-    if (!requirePremium() || !text) return;
-    await saveDocRecord('Transcricao_' + dateSlug() + '.docx', text, 'word');
-    showToast('Transcrição salva!');
-  });
-
-  $('btnTranslateOcr')?.addEventListener('click', async () => {
-    const text = $('ocrText')?.innerText.trim();
-    if (!text) { showToast('Nenhum texto para traduzir'); return; }
-    const langIn = $('settingLang')?.value || 'eng';
-    const langCode = langIn === 'por' ? 'pt' : langIn === 'eng' ? 'en' : langIn.substring(0, 2);
-    const translated = await translateText(text, langCode, 'pt');
-    if ($('ocrText')) $('ocrText').textContent = translated;
-    showToast('Texto traduzido para PT-BR!');
-  });
-});
-
-/* ===== GRAVAR VOZ ===== */
-function initSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Use o Chrome para gravar voz.'); return null; }
-  return new SR();
-}
-
+/* ===== FIM ===== */
+// BLOCO REMOVIDO ABAIXO — era duplicata que causava erro de sintaxe
+/*
 async function startRecording() {
   recognition = initSpeechRecognition();
   if (!recognition) return;
@@ -1551,45 +1478,4 @@ function clearRecording() {
   if ($('recordLiveText')) $('recordLiveText').innerHTML = '<p class="record-placeholder">O texto aparecerá aqui enquanto você fala...</p>';
   $('audioResultCard')?.classList.add('hidden');
 }
-
-/* ===== IMPORTAR ARQUIVO ===== */
-let audioBlob = null;
-
-function onAudioFileSelected(e) {
-  const file = e.target.files[0]; if (!file) return;
-  audioBlob = file;
-  const nameEl = $('audioFileName');
-  if (nameEl) { nameEl.textContent = file.name; nameEl.classList.remove('hidden'); }
-  const placeholderEl = $('audioUploadArea')?.querySelector('p');
-  if (placeholderEl) placeholderEl.textContent = file.name;
-  const url = URL.createObjectURL(file);
-  const audioEl = $('audioElement');
-  if (audioEl) audioEl.src = url;
-  $('audioPlayer')?.classList.remove('hidden');
-  const btnT = $('btnTranscribeFile');
-  if (btnT) btnT.disabled = false;
-  e.target.value = '';
-}
-
-async function transcribeAudioFile() {
-  if (!audioBlob) return;
-  showToast('Iniciando transcrição — reproduza o áudio próximo ao microfone ou use Gravar Voz diretamente.');
-  $('audioElement')?.play();
-  await startRecording();
-  const audioEl = $('audioElement');
-  if (audioEl) audioEl.onended = () => setTimeout(stopRecording, 1500);
-}
-
-function showAudioResult(text, lang) {
-  $('audioResultCard')?.classList.remove('hidden');
-  if ($('audioResultText')) $('audioResultText').textContent = text;
-  const labels = { 'pt-BR':'🇧🇷 PT-BR', 'en':'🇺🇸 EN', 'es':'🇪🇸 ES', 'fr':'🇫🇷 FR', 'none':'🌐 Original' };
-  if ($('audioResultLang')) $('audioResultLang').textContent = labels[lang] || '🌐';
-  $('audioResultCard')?.scrollIntoView({ behavior:'smooth', block:'start' });
-}
-
-let toastTimer;
-function showToast(msg) {
-  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
-}
+*/
