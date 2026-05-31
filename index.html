@@ -61,8 +61,33 @@
         <button class="btn-primary large auth-submit" id="btnDoLogin">
           <span class="material-icons-round">login</span>Entrar
         </button>
+        <button class="btn-ghost" id="btnForgotPassword" style="width:100%;justify-content:center;font-size:13px;color:var(--blue-glow)">
+          <span class="material-icons-round" style="font-size:16px">lock_reset</span>
+          Esqueci minha senha
+        </button>
         <button class="btn-ghost auth-visitor" id="btnVisitor">
           Continuar como Visitante
+        </button>
+      </div>
+
+      <!-- ---- RECUPERAR SENHA ---- -->
+      <div id="authFormReset" class="hidden">
+        <div class="confirm-email-art">
+          <span class="material-icons-round">lock_reset</span>
+        </div>
+        <h3 class="confirm-title">Recuperar senha</h3>
+        <p class="confirm-sub">Digite seu e-mail e enviaremos um link para criar uma nova senha.</p>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="resetEmail" placeholder="seu@email.com" autocomplete="email" />
+        </div>
+        <p class="auth-screen-error hidden" id="resetError"></p>
+        <p class="auth-screen-success hidden" id="resetSuccess" style="color:var(--green);background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.2);border-radius:6px;padding:10px 12px;font-size:13px;margin-bottom:10px"></p>
+        <button class="btn-primary large auth-submit" id="btnDoReset">
+          <span class="material-icons-round">send</span>Enviar link de recuperação
+        </button>
+        <button class="btn-ghost" id="btnBackFromReset" style="width:100%;justify-content:center;margin-top:8px">
+          ← Voltar ao login
         </button>
       </div>
 

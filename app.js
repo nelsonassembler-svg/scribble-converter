@@ -890,6 +890,20 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btnToggleRegPwd')?.addEventListener('click',  () => togglePwd('regPassword',        'regEyeIcon'));
   $('btnToggleRegPwd2')?.addEventListener('click', () => togglePwd('regPasswordConfirm', 'regEyeIcon2'));
 
+  // Recuperar senha
+  $('btnForgotPassword')?.addEventListener('click', () => {
+    $('authFormLogin').classList.add('hidden');
+    $('authFormRegister').classList.add('hidden');
+    $('authFormReset').classList.remove('hidden');
+    $('resetEmail').value = $('loginEmail').value || '';
+  });
+  $('btnBackFromReset')?.addEventListener('click', () => {
+    $('authFormReset').classList.add('hidden');
+    $('authFormLogin').classList.remove('hidden');
+  });
+  $('btnDoReset')?.addEventListener('click', doResetPassword);
+  $('resetEmail')?.addEventListener('keydown', e => { if (e.key === 'Enter') doResetPassword(); });
+
   // LGPD no cadastro
   $('btnRegLgpd')?.addEventListener('click', e => { e.preventDefault(); $('modalLgpd').classList.remove('hidden'); });
 
@@ -986,6 +1000,30 @@ async function doRegister() {
   $('authFormLogin').classList.add('hidden');
   $('authFormRegister').classList.add('hidden');
   $('authFormConfirm').classList.remove('hidden');
+}
+
+async function doResetPassword() {
+  const email = $('resetEmail').value.trim();
+  if (!email) { showAuthScreenError('resetError', 'Digite seu e-mail'); return; }
+
+  const btn = $('btnDoReset');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round spinning">sync</span>Enviando...';
+
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://nelsonassembler-svg.github.io/scribble-converter/?reset=true'
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">send</span>Enviar link de recuperação';
+
+  if (error) { showAuthScreenError('resetError', error.message); return; }
+
+  $('resetError').classList.add('hidden');
+  const success = $('resetSuccess');
+  success.textContent = `✅ Link enviado para ${email}! Verifique sua caixa de entrada e spam.`;
+  success.classList.remove('hidden');
+  $('btnDoReset').disabled = true;
 }
 
 function showAuthScreenError(id, msg) {
