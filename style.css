@@ -1017,6 +1017,106 @@ html, body {
 .user-plan-label.premium { color: #AB47BC; }
 .user-plan-label.admin   { color: gold; }
 
+/* ===== ÁUDIO ===== */
+.audio-lang-row {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.audio-lang-group {
+  flex: 1; min-width: 140px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.audio-lang-group label { font-size: 12px; color: var(--white-70); font-weight: 600; }
+
+.audio-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  margin-bottom: 14px;
+}
+.audio-card-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 700; margin-bottom: 6px;
+}
+.audio-card-title .material-icons-round { font-size: 20px; color: var(--blue-glow); }
+.audio-card-sub { font-size: 13px; color: var(--white-70); margin-bottom: 16px; line-height: 1.5; }
+.audio-result-lang {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  background: var(--blue); color: #fff;
+  padding: 3px 10px; border-radius: 99px;
+}
+
+/* GRAVAÇÃO */
+.record-visualizer {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; height: 60px; margin-bottom: 14px;
+}
+.record-waves { display: flex; align-items: center; gap: 4px; }
+.wave {
+  width: 4px; height: 20px;
+  background: var(--blue-light); border-radius: 99px;
+  transition: height .1s;
+}
+.recording .wave:nth-child(1) { animation: waveAnim .6s ease-in-out infinite alternate; }
+.recording .wave:nth-child(2) { animation: waveAnim .6s ease-in-out .1s infinite alternate; }
+.recording .wave:nth-child(3) { animation: waveAnim .6s ease-in-out .2s infinite alternate; }
+.recording .wave:nth-child(4) { animation: waveAnim .6s ease-in-out .3s infinite alternate; }
+.recording .wave:nth-child(5) { animation: waveAnim .6s ease-in-out .4s infinite alternate; }
+@keyframes waveAnim {
+  from { height: 8px; background: var(--blue-light); }
+  to   { height: 40px; background: var(--red); }
+}
+.record-timer {
+  font-size: 22px; font-weight: 800; color: var(--white);
+  font-variant-numeric: tabular-nums; min-width: 60px;
+}
+.recording .record-timer { color: var(--red); }
+
+.record-live-text {
+  background: rgba(0,0,0,.2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px;
+  min-height: 80px; max-height: 200px; overflow-y: auto;
+  font-size: 14px; line-height: 1.7; color: var(--white);
+  margin-bottom: 14px; white-space: pre-wrap;
+}
+.record-placeholder { color: var(--white-40); font-style: italic; font-size: 13px; }
+
+.record-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-record {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, var(--red), #E53935);
+  color: #fff; border: none; cursor: pointer;
+  border-radius: var(--radius-sm); padding: 12px 20px;
+  font-size: 14px; font-weight: 700; font-family: var(--font);
+  transition: transform .1s, opacity .15s;
+}
+.btn-record:active { transform: scale(.97); }
+.btn-record.stop {
+  background: linear-gradient(135deg, #424242, #616161);
+}
+
+/* UPLOAD ÁUDIO */
+.audio-upload-area {
+  border: 2px dashed var(--border); border-radius: var(--radius-sm);
+  padding: 24px; text-align: center; cursor: pointer;
+  color: var(--white-40); margin-bottom: 14px;
+  transition: border-color .15s, color .15s;
+}
+.audio-upload-area:hover { border-color: var(--blue-light); color: var(--white-70); }
+.audio-upload-area .material-icons-round { font-size: 40px; margin-bottom: 8px; }
+.audio-upload-area p { font-size: 13px; }
+.audio-file-name { color: var(--blue-glow); font-weight: 600; }
+
+/* RESULTADO */
+.audio-result-text {
+  background: rgba(0,0,0,.2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px;
+  min-height: 100px; max-height: 250px; overflow-y: auto;
+  font-size: 14px; line-height: 1.7; color: var(--white);
+  margin-bottom: 14px; white-space: pre-wrap; outline: none;
+  user-select: text;
+}
+.audio-result-text:focus { border-color: var(--blue-light); }
+.audio-result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* ===== HELP / TUTORIAL ===== */
 .help-header {
   display: flex; align-items: center; gap: 14px;

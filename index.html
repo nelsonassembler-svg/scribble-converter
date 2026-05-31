@@ -198,6 +198,9 @@
           <button class="btn-outline green premium-only" id="btnExportExcel">
             <span class="material-icons-round">table_chart</span>Excel
           </button>
+          <button class="btn-outline" id="btnTranslateOcr" style="border-color:#4CAF50;color:#81C784">
+            <span class="material-icons-round">translate</span>Traduzir PT-BR
+          </button>
           <button class="btn-outline purple" id="btnShareOcr">
             <span class="material-icons-round">share</span>Compartilhar
           </button>
@@ -590,6 +593,133 @@
 
     </section>
 
+    <!-- ABA: ÁUDIO -->
+    <section id="tabAudio" class="tab-section">
+      <div class="section-header">
+        <h2>Áudio para Texto</h2>
+        <span class="badge" style="background:var(--red)">🎙️</span>
+      </div>
+
+      <!-- SELETOR DE IDIOMA -->
+      <div class="audio-lang-row">
+        <div class="audio-lang-group">
+          <label>Idioma do áudio:</label>
+          <select id="audioLangInput" class="settings-select">
+            <option value="pt-BR">🇧🇷 Português (BR)</option>
+            <option value="en-US">🇺🇸 Inglês (EUA)</option>
+            <option value="en-GB">🇬🇧 Inglês (UK)</option>
+            <option value="es-ES">🇪🇸 Espanhol</option>
+            <option value="fr-FR">🇫🇷 Francês</option>
+            <option value="de-DE">🇩🇪 Alemão</option>
+            <option value="it-IT">🇮🇹 Italiano</option>
+            <option value="ja-JP">🇯🇵 Japonês</option>
+            <option value="zh-CN">🇨🇳 Chinês</option>
+          </select>
+        </div>
+        <div class="audio-lang-group">
+          <label>Traduzir para:</label>
+          <select id="audioLangOutput" class="settings-select">
+            <option value="none">— Sem tradução —</option>
+            <option value="pt-BR" selected>🇧🇷 Português (BR)</option>
+            <option value="en">🇺🇸 Inglês</option>
+            <option value="es">🇪🇸 Espanhol</option>
+            <option value="fr">🇫🇷 Francês</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- GRAVAÇÃO EM TEMPO REAL -->
+      <div class="audio-card" id="audioRecordCard">
+        <div class="audio-card-title">
+          <span class="material-icons-round">mic</span>
+          Gravar reunião ou aula
+        </div>
+        <p class="audio-card-sub">Fale e o texto aparecerá em tempo real. Funciona com microfone do celular ou computador.</p>
+
+        <div class="record-visualizer" id="recordVisualizer">
+          <div class="record-waves">
+            <div class="wave"></div><div class="wave"></div><div class="wave"></div>
+            <div class="wave"></div><div class="wave"></div>
+          </div>
+          <span class="record-timer" id="recordTimer">00:00</span>
+        </div>
+
+        <div class="record-live-text" id="recordLiveText">
+          <p class="record-placeholder">O texto aparecerá aqui enquanto você fala...</p>
+        </div>
+
+        <div class="record-actions">
+          <button class="btn-record" id="btnStartRecord">
+            <span class="material-icons-round">mic</span>
+            Iniciar gravação
+          </button>
+          <button class="btn-record stop hidden" id="btnStopRecord">
+            <span class="material-icons-round">stop</span>
+            Parar
+          </button>
+          <button class="btn-outline hidden" id="btnClearRecord">
+            <span class="material-icons-round">delete</span>
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- IMPORTAR ARQUIVO DE ÁUDIO -->
+      <div class="audio-card" id="audioFileCard">
+        <div class="audio-card-title">
+          <span class="material-icons-round">audio_file</span>
+          Importar arquivo de áudio
+        </div>
+        <p class="audio-card-sub">Envie um arquivo de áudio (MP3, WAV, M4A, OGG) e transcreva o conteúdo.</p>
+
+        <div class="audio-upload-area" id="audioUploadArea">
+          <span class="material-icons-round">upload_file</span>
+          <p>Toque para selecionar o arquivo</p>
+          <p class="audio-file-name hidden" id="audioFileName"></p>
+        </div>
+        <input type="file" id="audioFileInput" accept="audio/*,.mp3,.wav,.m4a,.ogg,.mp4,.webm" class="hidden" />
+
+        <div id="audioPlayer" class="hidden">
+          <audio id="audioElement" controls style="width:100%;margin:12px 0;border-radius:8px"></audio>
+        </div>
+
+        <button class="btn-primary large" id="btnTranscribeFile" disabled style="width:100%;justify-content:center">
+          <span class="material-icons-round">transcribe</span>
+          Transcrever áudio
+        </button>
+      </div>
+
+      <!-- RESULTADO DA TRANSCRIÇÃO -->
+      <div class="audio-card hidden" id="audioResultCard">
+        <div class="audio-card-title">
+          <span class="material-icons-round">text_snippet</span>
+          Transcrição
+          <span class="audio-result-lang" id="audioResultLang"></span>
+        </div>
+        <div class="audio-result-text" id="audioResultText" contenteditable="true" spellcheck="true"></div>
+
+        <div class="audio-result-actions">
+          <button class="btn-outline" id="btnTranslateResult">
+            <span class="material-icons-round">translate</span>
+            Traduzir para PT-BR
+          </button>
+          <button class="btn-outline" id="btnAudioExportWord">
+            <span class="material-icons-round">description</span>
+            Word
+          </button>
+          <button class="btn-outline green" id="btnAudioExportExcel">
+            <span class="material-icons-round">table_chart</span>
+            Excel
+          </button>
+          <button class="btn-primary" id="btnAudioSave">
+            <span class="material-icons-round">save</span>
+            Salvar
+          </button>
+        </div>
+      </div>
+
+    </section>
+
     <!-- RODAPÉ -->
     <div class="dev-footer" id="devFooter">
       <span class="material-icons-round dev-footer-icon">draw</span>
@@ -608,7 +738,10 @@
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
     <button class="nav-item active" data-tab="tabDocs">
-      <span class="material-icons-round">description</span><span>Documentos</span>
+      <span class="material-icons-round">description</span><span>Docs</span>
+    </button>
+    <button class="nav-item" data-tab="tabAudio">
+      <span class="material-icons-round">mic</span><span>Áudio</span>
     </button>
     <button class="nav-item" data-tab="tabSheets">
       <span class="material-icons-round">table_chart</span><span>Planilhas</span>
