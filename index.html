@@ -184,8 +184,79 @@
   <!-- MAIN CONTENT -->
   <main class="main-content" id="mainContent">
 
+    <!-- ABA: INÍCIO (HOME) -->
+    <section id="tabHome" class="tab-section active">
+      <div class="home-greeting" id="homeGreeting">
+        <p class="home-hello">Olá! 👋</p>
+        <p class="home-sub">O que deseja fazer hoje?</p>
+      </div>
+
+      <!-- CARDS DE AÇÃO PRINCIPAIS -->
+      <div class="action-cards">
+
+        <div class="action-card blue" id="cardScan">
+          <div class="action-card-icon"><span class="material-icons-round">document_scanner</span></div>
+          <div class="action-card-body">
+            <p class="action-card-title">Escanear Documento</p>
+            <p class="action-card-desc">Fotografe ou importe uma imagem de texto manuscrito ou impresso e converta para Word ou Excel</p>
+          </div>
+          <span class="material-icons-round action-card-arrow">chevron_right</span>
+        </div>
+
+        <div class="action-card red" id="cardRecord">
+          <div class="action-card-icon"><span class="material-icons-round">mic</span></div>
+          <div class="action-card-body">
+            <p class="action-card-title">Gravar Reunião ou Aula</p>
+            <p class="action-card-desc">Grave áudio em tempo real e converta para texto em Word. Funciona em português, inglês e outros idiomas</p>
+          </div>
+          <span class="material-icons-round action-card-arrow">chevron_right</span>
+        </div>
+
+        <div class="action-card orange" id="cardAudioFile">
+          <div class="action-card-icon"><span class="material-icons-round">audio_file</span></div>
+          <div class="action-card-body">
+            <p class="action-card-title">Importar Áudio → Texto</p>
+            <p class="action-card-desc">Envie um arquivo MP3, WAV ou M4A do celular ou computador e transcreva para Word</p>
+          </div>
+          <span class="material-icons-round action-card-arrow">chevron_right</span>
+        </div>
+
+        <div class="action-card green" id="cardTranslate">
+          <div class="action-card-icon"><span class="material-icons-round">translate</span></div>
+          <div class="action-card-body">
+            <p class="action-card-title">Traduzir para Português</p>
+            <p class="action-card-desc">Escaneie texto em inglês ou outro idioma e receba a tradução completa em português do Brasil</p>
+          </div>
+          <span class="material-icons-round action-card-arrow">chevron_right</span>
+        </div>
+
+        <div class="action-card purple" id="cardDocs">
+          <div class="action-card-icon"><span class="material-icons-round">folder_open</span></div>
+          <div class="action-card-body">
+            <p class="action-card-title">Meus Documentos</p>
+            <p class="action-card-desc">Acesse o histórico de documentos digitalizados e transcrições salvas na nuvem</p>
+            <p class="action-card-badge" id="homeBadgeDocs">0 documentos</p>
+          </div>
+          <span class="material-icons-round action-card-arrow">chevron_right</span>
+        </div>
+
+      </div>
+
+      <!-- COMO FUNCIONA -->
+      <div class="how-it-works">
+        <p class="how-title">Como funciona</p>
+        <div class="how-steps">
+          <div class="how-step"><span class="how-num">1</span><span>Escaneie, grave ou importe</span></div>
+          <div class="how-arrow">→</div>
+          <div class="how-step"><span class="how-num">2</span><span>OCR reconhece o texto</span></div>
+          <div class="how-arrow">→</div>
+          <div class="how-step"><span class="how-num">3</span><span>Traduz e exporta Word/Excel</span></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ABA: DOCUMENTOS -->
-    <section id="tabDocs" class="tab-section active">
+    <section id="tabDocs" class="tab-section">
       <div class="section-header">
         <h2>Meus Documentos</h2>
         <span class="badge" id="badgeDocs">0</span>
@@ -762,14 +833,14 @@
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
-    <button class="nav-item active" data-tab="tabDocs">
-      <span class="material-icons-round">description</span><span>Docs</span>
+    <button class="nav-item active" data-tab="tabHome">
+      <span class="material-icons-round">home</span><span>Início</span>
     </button>
     <button class="nav-item" data-tab="tabAudio">
       <span class="material-icons-round">mic</span><span>Áudio</span>
     </button>
-    <button class="nav-item" data-tab="tabSheets">
-      <span class="material-icons-round">table_chart</span><span>Planilhas</span>
+    <button class="nav-item" data-tab="tabDocs">
+      <span class="material-icons-round">description</span><span>Docs</span>
     </button>
     <button class="nav-item" data-tab="tabPlans">
       <span class="material-icons-round">workspace_premium</span><span>Planos</span>

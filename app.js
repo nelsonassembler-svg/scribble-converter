@@ -188,6 +188,7 @@ function showApp() {
   $('app').classList.remove('hidden');
   loadDocs();
   updateAdminUI();
+  updateHomeGreeting();
   if (!localStorage.getItem('scribble_onboarded')) {
     setTimeout(() => {
       $('modalHelp').classList.remove('hidden');
@@ -195,6 +196,53 @@ function showApp() {
     }, 700);
   }
 }
+
+function updateHomeGreeting() {
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  const name = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || '';
+  const el = $('homeGreeting');
+  if (el) {
+    el.querySelector('.home-hello').textContent = `${greeting}${name ? ', ' + name : ''}! 👋`;
+  }
+}
+
+/* ===== HOME CARDS ===== */
+document.addEventListener('DOMContentLoaded', () => {
+  // Card: Escanear
+  $('cardScan')?.addEventListener('click', () => {
+    openScanModal();
+  });
+
+  // Card: Gravar reunião
+  $('cardRecord')?.addEventListener('click', () => {
+    switchTab('tabAudio');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabAudio'));
+    setTimeout(() => $('btnStartRecord')?.scrollIntoView({ behavior: 'smooth' }), 300);
+  });
+
+  // Card: Importar áudio
+  $('cardAudioFile')?.addEventListener('click', () => {
+    switchTab('tabAudio');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabAudio'));
+    setTimeout(() => {
+      $('audioUploadArea')?.scrollIntoView({ behavior: 'smooth' });
+      $('audioFileInput')?.click();
+    }, 400);
+  });
+
+  // Card: Traduzir
+  $('cardTranslate')?.addEventListener('click', () => {
+    openScanModal();
+    showToast('Escaneie o texto → depois toque em "Traduzir PT-BR"');
+  });
+
+  // Card: Meus documentos
+  $('cardDocs')?.addEventListener('click', () => {
+    switchTab('tabDocs');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'tabDocs'));
+  });
+});
 
 function showAuthScreen() {
   $('app').classList.add('hidden');
@@ -782,6 +830,8 @@ function renderDocs() {
   const list = $('docList'), q = searchQuery;
   const filtered = docs.filter(d => !q || d.name.toLowerCase().includes(q) || d.text?.toLowerCase().includes(q));
   $('badgeDocs').textContent = docs.length; $('statDocs').textContent = docs.length;
+  const homeBadge = $('homeBadgeDocs');
+  if (homeBadge) homeBadge.textContent = docs.length + (docs.length === 1 ? ' documento' : ' documentos');
   $('emptyDocs').classList.toggle('hidden', filtered.length > 0);
   [...list.querySelectorAll('.doc-item')].forEach(el => el.remove());
   filtered.forEach(doc => list.appendChild(docItemEl(doc, 'word')));

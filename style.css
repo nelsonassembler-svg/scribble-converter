@@ -1017,6 +1017,78 @@ html, body {
 .user-plan-label.premium { color: #AB47BC; }
 .user-plan-label.admin   { color: gold; }
 
+/* ===== HOME DASHBOARD ===== */
+.home-greeting {
+  padding: 4px 0 16px;
+}
+.home-hello { font-size: 22px; font-weight: 800; }
+.home-sub   { font-size: 14px; color: var(--white-70); margin-top: 4px; }
+
+.action-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+
+.action-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: transform .12s, background .15s;
+  border-left: 4px solid transparent;
+}
+.action-card:active { transform: scale(.98); }
+.action-card.blue   { border-left-color: var(--blue-light); }
+.action-card.red    { border-left-color: #F44336; }
+.action-card.orange { border-left-color: #FF9800; }
+.action-card.green  { border-left-color: var(--green); }
+.action-card.purple { border-left-color: #AB47BC; }
+
+.action-card-icon {
+  width: 50px; height: 50px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.action-card.blue   .action-card-icon { background: rgba(30,136,229,.2); color: var(--blue-glow); }
+.action-card.red    .action-card-icon { background: rgba(244,67,54,.15); color: #EF9A9A; }
+.action-card.orange .action-card-icon { background: rgba(255,152,0,.15); color: #FFCC80; }
+.action-card.green  .action-card-icon { background: rgba(0,200,83,.15); color: #69F0AE; }
+.action-card.purple .action-card-icon { background: rgba(171,71,188,.15); color: #CE93D8; }
+.action-card-icon .material-icons-round { font-size: 26px; }
+
+.action-card-body { flex: 1; min-width: 0; }
+.action-card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.action-card-desc  { font-size: 12px; color: var(--white-70); line-height: 1.5; }
+.action-card-badge {
+  display: inline-block; margin-top: 6px;
+  font-size: 11px; font-weight: 700;
+  color: #AB47BC; background: rgba(171,71,188,.12);
+  padding: 2px 8px; border-radius: 99px;
+}
+.action-card-arrow { color: var(--white-40); font-size: 20px; flex-shrink: 0; }
+
+/* COMO FUNCIONA */
+.how-it-works {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 8px;
+}
+.how-title { font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--white-40); margin-bottom: 14px; }
+.how-steps {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.how-step {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--white-70);
+}
+.how-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.how-arrow { color: var(--white-40); font-size: 16px; }
+
 /* ===== ÁUDIO ===== */
 .audio-lang-row {
   display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
