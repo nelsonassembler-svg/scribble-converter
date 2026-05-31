@@ -1,4 +1,4 @@
-const CACHE = 'scribble-v3';
+const CACHE = 'scribble-v4';
 const BASE  = '/scribble-converter/';
 const ASSETS = [
   BASE,
@@ -27,8 +27,15 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Supabase e Stripe sempre vão para rede (não cachear)
+  if (e.request.url.includes('supabase.co') ||
+      e.request.url.includes('stripe.com') ||
+      e.request.url.includes('mymemory.translated')) {
+    e.respondWith(fetch(e.request).catch(() => new Response('offline', { status: 503 })));
+    return;
+  }
   e.respondWith(
     caches.match(e.request)
-      .then(cached => cached || fetch(e.request))
+      .then(cached => cached || fetch(e.request).catch(() => cached))
   );
 });

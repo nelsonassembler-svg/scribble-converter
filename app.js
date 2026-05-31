@@ -169,18 +169,24 @@ async function triggerInstall() {
 window.addEventListener('load', async () => {
   loadSettings();
   checkPaymentReturn();
-  await initSupabase();
+
+  // Timeout de segurança — evita loop infinito no celular
+  const MAX_WAIT = 4000;
+  const initPromise = initSupabase();
+  const timeoutPromise = new Promise(resolve => setTimeout(resolve, MAX_WAIT));
+
+  await Promise.race([initPromise, timeoutPromise]);
+
+  // Esconde splash independente do resultado
+  $('splash').style.opacity = '0';
   setTimeout(() => {
-    $('splash').style.opacity = '0';
-    setTimeout(async () => {
-      $('splash').classList.add('hidden');
-      if (currentUser) {
-        showApp();
-      } else {
-        showAuthScreen();
-      }
-    }, 500);
-  }, 1800);
+    $('splash').classList.add('hidden');
+    if (currentUser) {
+      showApp();
+    } else {
+      showAuthScreen();
+    }
+  }, 400);
 });
 
 function showApp() {
