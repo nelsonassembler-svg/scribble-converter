@@ -1152,6 +1152,11 @@ html, body {
 .record-placeholder { color: var(--white-40); font-style: italic; font-size: 13px; }
 
 .record-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.record-tip {
+  background: rgba(244,67,54,.1); border: 1px solid rgba(244,67,54,.3);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 13px; color: #EF9A9A; line-height: 1.5; margin-top: 10px;
+}
 .btn-record {
   display: flex; align-items: center; gap: 8px;
   background: linear-gradient(135deg, var(--red), #E53935);
@@ -1286,18 +1291,11 @@ html, body {
   text-align: center;
   padding: 20px 24px 16px;
   border-top: 1px solid var(--border);
-  margin-top: 0;
-}
-
-.tab-section.active {
-  min-height: calc(100vh - var(--top-h) - var(--nav-h) - 200px);
-  display: flex;
-  flex-direction: column;
+  margin-top: 32px;
 }
 
 .main-content {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 .dev-footer-icon {
   font-size: 32px;

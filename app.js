@@ -1472,9 +1472,10 @@ async function startRecording() {
   fullTranscript = ''; isRecording = true; recordSeconds = 0;
   $('btnStartRecord')?.classList.add('hidden');
   $('btnStopRecord')?.classList.remove('hidden');
-  $('btnClearRecord')?.classList.remove('hidden');
+  $('btnClearRecord')?.classList.add('hidden');
+  $('recordTip')?.classList.remove('hidden');
   $('recordVisualizer')?.classList.add('recording');
-  if ($('recordLiveText')) $('recordLiveText').innerHTML = '';
+  if ($('recordLiveText')) $('recordLiveText').innerHTML = '<p class="record-placeholder">Aguardando sua voz...</p>';
 
   recordTimer = setInterval(() => {
     recordSeconds++;
@@ -1507,8 +1508,14 @@ async function stopRecording() {
   $('recordVisualizer')?.classList.remove('recording');
   $('btnStartRecord')?.classList.remove('hidden');
   $('btnStopRecord')?.classList.add('hidden');
+  $('btnClearRecord')?.classList.remove('hidden');
+  $('recordTip')?.classList.add('hidden');
 
-  if (!fullTranscript.trim()) { showToast('Nenhum texto detectado'); return; }
+  if (!fullTranscript.trim()) {
+    showToast('Nenhum texto detectado. Verifique o microfone e tente novamente.');
+    if ($('recordLiveText')) $('recordLiveText').innerHTML = '<p class="record-placeholder">Nenhum texto detectado. Tente falar mais perto do microfone.</p>';
+    return;
+  }
 
   let finalText = fullTranscript.trim();
   const langOut = $('audioLangOutput')?.value || 'none';
