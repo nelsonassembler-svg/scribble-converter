@@ -1466,9 +1466,9 @@ async function startRecording() {
   recognition = initSpeechRecognition();
   if (!recognition) return;
   const lang = $('audioLangInput')?.value || 'pt-BR';
-  recognition.lang = lang;
+  recognition.lang           = lang;
   recognition.continuous     = true;
-  recognition.interimResults = true;
+  recognition.interimResults = false; // apenas resultados finais — evita repetição
 
   fullTranscript = ''; savedTranscript = ''; isRecording = true; recordSeconds = 0;
   $('btnStartRecord')?.classList.add('hidden');
@@ -1486,21 +1486,14 @@ async function startRecording() {
   }, 1000);
 
   recognition.onresult = e => {
-    // Reconstrói SOMENTE a partir dos resultados FINAIS desta sessão
-    let sessionFinal = '';
-    let interim      = '';
-    for (let i = 0; i < e.results.length; i++) {
+    // Com interimResults = false, todos os resultados são finais
+    for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
-        sessionFinal += e.results[i][0].transcript + ' ';
-      } else {
-        interim = e.results[i][0].transcript;
+        fullTranscript += e.results[i][0].transcript + ' ';
       }
     }
-    // Texto total = salvo antes do reinício + final desta sessão
-    fullTranscript = savedTranscript + sessionFinal;
     if ($('recordLiveText')) $('recordLiveText').innerHTML =
-      `<span style="color:var(--white)">${fullTranscript}</span>` +
-      `<span style="color:var(--white-40);font-style:italic">${interim}</span>`;
+      `<span style="color:var(--white)">${fullTranscript}</span>`;
   };
 
   recognition.onerror = e => {
@@ -1512,7 +1505,7 @@ async function startRecording() {
 
   recognition.onend = () => {
     if (isRecording) {
-      savedTranscript = fullTranscript; // salva antes de reiniciar
+      // Não precisa mais de savedTranscript — fullTranscript acumula diretamente
       try { recognition.start(); } catch(err) {}
     }
   };
