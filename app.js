@@ -1484,20 +1484,49 @@ async function startRecording() {
     if ($('recordTimer')) $('recordTimer').textContent = `${m}:${s}`;
   }, 1000);
 
+  // Índice base para evitar reprocessar resultados antigos ao reiniciar
+  let baseIndex = 0;
+
   recognition.onresult = e => {
-    let interim = '', final = '';
+    // Processa apenas resultados NOVOS a partir do resultIndex
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) final += t + ' '; else interim += t;
+      if (e.results[i].isFinal) {
+        // Adiciona apenas se for resultado novo (evita duplicatas)
+        const newText = e.results[i][0].transcript.trim();
+        if (newText && !fullTranscript.endsWith(newText + ' ')) {
+          fullTranscript += newText + ' ';
+        }
+      }
     }
-    if (final) fullTranscript += final;
+
+    // Mostra texto interim (o que ainda está sendo processado)
+    let interim = '';
+    if (!e.results[e.results.length - 1]?.isFinal) {
+      interim = e.results[e.results.length - 1][0].transcript;
+    }
+
     if ($('recordLiveText')) $('recordLiveText').innerHTML =
       `<span style="color:var(--white)">${fullTranscript}</span>` +
       `<span style="color:var(--white-40);font-style:italic">${interim}</span>`;
   };
 
-  recognition.onerror = e => { if (e.error !== 'no-speech') { showToast('Erro: ' + e.error); stopRecording(); } };
-  recognition.onend   = () => { if (isRecording) recognition.start(); };
+  recognition.onerror = e => {
+    if (e.error === 'not-allowed') {
+      showToast('Permissão de microfone negada. Verifique as configurações do navegador.');
+      stopRecording();
+    } else if (e.error !== 'no-speech') {
+      console.warn('Erro de reconhecimento:', e.error);
+    }
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      // Reinicia mas zera o índice base para não reprocessar
+      baseIndex = 0;
+      try { recognition.start(); } catch {}
+    }
+  };
+
   recognition.start();
 }
 
