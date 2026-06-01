@@ -1244,11 +1244,12 @@ async function translateText(text, fromLang, toLang) {
 }
 
 /* ===== ÁUDIO — GRAVAÇÃO EM TEMPO REAL ===== */
-let recognition    = null;
-let recordTimer    = null;
-let recordSeconds  = 0;
-let fullTranscript = '';
-let isRecording    = false;
+let recognition     = null;
+let recordTimer     = null;
+let recordSeconds   = 0;
+let fullTranscript  = '';  // texto acumulado desta sessão inteira
+let savedTranscript = '';  // salvo antes de cada reinício do recognition
+let isRecording     = false;
 
 function initSpeechRecognition() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1469,7 +1470,7 @@ async function startRecording() {
   recognition.continuous     = true;
   recognition.interimResults = true;
 
-  fullTranscript = ''; isRecording = true; recordSeconds = 0;
+  fullTranscript = ''; savedTranscript = ''; isRecording = true; recordSeconds = 0;
   $('btnStartRecord')?.classList.add('hidden');
   $('btnStopRecord')?.classList.remove('hidden');
   $('btnClearRecord')?.classList.add('hidden');
@@ -1484,27 +1485,19 @@ async function startRecording() {
     if ($('recordTimer')) $('recordTimer').textContent = `${m}:${s}`;
   }, 1000);
 
-  // Índice base para evitar reprocessar resultados antigos ao reiniciar
-  let baseIndex = 0;
-
   recognition.onresult = e => {
-    // Processa apenas resultados NOVOS a partir do resultIndex
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    // Reconstrói SOMENTE a partir dos resultados FINAIS desta sessão
+    let sessionFinal = '';
+    let interim      = '';
+    for (let i = 0; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
-        // Adiciona apenas se for resultado novo (evita duplicatas)
-        const newText = e.results[i][0].transcript.trim();
-        if (newText && !fullTranscript.endsWith(newText + ' ')) {
-          fullTranscript += newText + ' ';
-        }
+        sessionFinal += e.results[i][0].transcript + ' ';
+      } else {
+        interim = e.results[i][0].transcript;
       }
     }
-
-    // Mostra texto interim (o que ainda está sendo processado)
-    let interim = '';
-    if (!e.results[e.results.length - 1]?.isFinal) {
-      interim = e.results[e.results.length - 1][0].transcript;
-    }
-
+    // Texto total = salvo antes do reinício + final desta sessão
+    fullTranscript = savedTranscript + sessionFinal;
     if ($('recordLiveText')) $('recordLiveText').innerHTML =
       `<span style="color:var(--white)">${fullTranscript}</span>` +
       `<span style="color:var(--white-40);font-style:italic">${interim}</span>`;
@@ -1512,18 +1505,15 @@ async function startRecording() {
 
   recognition.onerror = e => {
     if (e.error === 'not-allowed') {
-      showToast('Permissão de microfone negada. Verifique as configurações do navegador.');
+      showToast('Permissão de microfone negada.');
       stopRecording();
-    } else if (e.error !== 'no-speech') {
-      console.warn('Erro de reconhecimento:', e.error);
     }
   };
 
   recognition.onend = () => {
     if (isRecording) {
-      // Reinicia mas zera o índice base para não reprocessar
-      baseIndex = 0;
-      try { recognition.start(); } catch {}
+      savedTranscript = fullTranscript; // salva antes de reiniciar
+      try { recognition.start(); } catch(err) {}
     }
   };
 
