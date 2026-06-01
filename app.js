@@ -1244,25 +1244,13 @@ async function translateText(text, fromLang, toLang) {
 }
 
 /* ===== ÁUDIO — GRAVAÇÃO EM TEMPO REAL ===== */
-let recognition     = null;
-let recordTimer     = null;
-let recordSeconds   = 0;
-let fullTranscript  = '';  // texto acumulado desta sessão inteira
-let savedTranscript = '';  // salvo antes de cada reinício do recognition
-let isRecording     = false;
+let mediaRecorder  = null;
+let audioChunks    = [];
+let recordTimer    = null;
+let recordSeconds  = 0;
+let isRecording    = false;
 
-function initSpeechRecognition() {
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRec) {
-    showToast('Seu navegador não suporta gravação de voz. Use o Chrome.');
-    return null;
-  }
-  const rec = new SpeechRec();
-  rec.continuous      = true;
-  rec.interimResults  = true;
-  rec.maxAlternatives = 1;
-  return rec;
-}
+const WHISPER_URL = 'https://cklxdvlkagwyzzmxdmpm.supabase.co/functions/v1/whisper-transcribe';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Botão iniciar gravação
@@ -1321,87 +1309,111 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function startRecording() {
-  recognition = initSpeechRecognition();
-  if (!recognition) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    isRecording = true;
+    recordSeconds = 0;
 
-  const lang = $('audioLangInput').value;
-  recognition.lang = lang;
+    // Escolhe formato suportado
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                   : MediaRecorder.isTypeSupported('audio/mp4')  ? 'audio/mp4'
+                   : 'audio/ogg';
 
-  fullTranscript = '';
-  isRecording    = true;
-  recordSeconds  = 0;
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
 
-  // UI
-  $('btnStartRecord').classList.add('hidden');
-  $('btnStopRecord').classList.remove('hidden');
-  $('btnClearRecord').classList.remove('hidden');
-  $('recordVisualizer').classList.add('recording');
-  $('recordLiveText').innerHTML = '';
+    mediaRecorder.start(1000); // coleta chunks a cada 1s
 
-  // Timer
-  recordTimer = setInterval(() => {
-    recordSeconds++;
-    const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
-    const s = String(recordSeconds % 60).padStart(2, '0');
-    $('recordTimer').textContent = `${m}:${s}`;
-  }, 1000);
+    // UI
+    $('btnStartRecord')?.classList.add('hidden');
+    $('btnStopRecord')?.classList.remove('hidden');
+    $('btnClearRecord')?.classList.add('hidden');
+    $('recordTip')?.classList.remove('hidden');
+    $('recordVisualizer')?.classList.add('recording');
+    if ($('recordLiveText')) $('recordLiveText').innerHTML =
+      '<p style="color:var(--white-70);font-style:italic">🎙️ Gravando... O texto aparecerá após você parar.</p>';
 
-  // Eventos do reconhecimento
-  recognition.onresult = (e) => {
-    let interim = '';
-    let final   = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) { final += t + ' '; }
-      else { interim += t; }
-    }
-    if (final) fullTranscript += final;
-    $('recordLiveText').innerHTML =
-      `<span style="color:var(--white)">${fullTranscript}</span>` +
-      `<span style="color:var(--white-40);font-style:italic">${interim}</span>`;
-  };
+    recordTimer = setInterval(() => {
+      recordSeconds++;
+      const m = String(Math.floor(recordSeconds / 60)).padStart(2,'0');
+      const s = String(recordSeconds % 60).padStart(2,'0');
+      if ($('recordTimer')) $('recordTimer').textContent = `${m}:${s}`;
+    }, 1000);
 
-  recognition.onerror = (e) => {
-    if (e.error !== 'no-speech') {
-      showToast('Erro no reconhecimento: ' + e.error);
-      stopRecording();
-    }
-  };
-
-  recognition.onend = () => {
-    if (isRecording) recognition.start(); // reinicia continuamente
-  };
-
-  recognition.start();
+  } catch(err) {
+    showToast('Erro ao acessar microfone: ' + err.message);
+  }
 }
 
 async function stopRecording() {
+  if (!mediaRecorder || !isRecording) return;
   isRecording = false;
-  recognition?.stop();
   clearInterval(recordTimer);
-  $('recordVisualizer').classList.remove('recording');
-  $('btnStartRecord').classList.remove('hidden');
-  $('btnStopRecord').classList.add('hidden');
 
-  if (!fullTranscript.trim()) { showToast('Nenhum texto detectado'); return; }
+  $('recordVisualizer')?.classList.remove('recording');
+  $('btnStartRecord')?.classList.remove('hidden');
+  $('btnStopRecord')?.classList.add('hidden');
+  $('btnClearRecord')?.classList.remove('hidden');
+  $('recordTip')?.classList.add('hidden');
 
-  // Verifica se precisa traduzir
-  const langOut = $('audioLangOutput').value;
-  let finalText = fullTranscript.trim();
+  if ($('recordLiveText')) $('recordLiveText').innerHTML =
+    '<p style="color:var(--blue-glow)">⏳ Transcrevendo com Whisper AI... Aguarde.</p>';
 
-  if (langOut !== 'none' && !$('audioLangInput').value.startsWith(langOut.split('-')[0])) {
-    finalText = await translateText(finalText, $('audioLangInput').value, langOut);
-  }
+  mediaRecorder.stop();
+  mediaRecorder.stream?.getTracks().forEach(t => t.stop());
 
-  showAudioResult(finalText, langOut);
+  // Aguarda o último chunk
+  await new Promise(r => setTimeout(r, 800));
+
+  const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+  await transcribeWithWhisper(audioBlob);
 }
 
 function clearRecording() {
-  fullTranscript = '';
-  recordSeconds  = 0;
-  $('recordTimer').textContent  = '00:00';
-  $('recordLiveText').innerHTML = '<p class="record-placeholder">O texto aparecerá aqui enquanto você fala...</p>';
-  $('audioResultCard').classList.add('hidden');
+  audioChunks = [];
+  recordSeconds = 0;
+  if ($('recordTimer'))    $('recordTimer').textContent = '00:00';
+  if ($('recordLiveText')) $('recordLiveText').innerHTML =
+    '<p class="record-placeholder">O texto aparecerá aqui após a transcrição...</p>';
+  $('audioResultCard')?.classList.add('hidden');
+}
+
+async function transcribeWithWhisper(blob) {
+  try {
+    const langInput = $('audioLangInput')?.value || 'pt-BR';
+    const langOut   = $('audioLangOutput')?.value || 'pt-BR';
+    const langCode  = langInput.split('-')[0]; // pt-BR → pt
+
+    // Traduz para PT-BR se idioma de entrada for diferente
+    const translate = langOut !== 'none' && langCode !== 'pt';
+
+    const form = new FormData();
+    const ext  = blob.type.includes('mp4') ? 'mp4' : blob.type.includes('ogg') ? 'ogg' : 'webm';
+    form.append('audio',     blob, `audio.${ext}`);
+    form.append('language',  langCode);
+    form.append('translate', String(translate));
+
+    const res  = await fetch(WHISPER_URL, { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    let text = data.text?.trim() || '';
+
+    // Se pediu tradução para PT-BR e Whisper não traduziu, traduz via MyMemory
+    if (langOut === 'pt-BR' && !translate && langCode !== 'pt') {
+      text = await translateText(text, langCode, 'pt');
+    }
+
+    if ($('recordLiveText')) $('recordLiveText').textContent = text;
+    showAudioResult(text, langOut);
+
+  } catch(err) {
+    showToast('Erro na transcrição: ' + err.message);
+    if ($('recordLiveText')) $('recordLiveText').innerHTML =
+      `<p style="color:var(--red)">Erro: ${err.message}</p>`;
+  }
 }
 
 /* ===== ÁUDIO — ARQUIVO ===== */
@@ -1427,18 +1439,11 @@ function onAudioFileSelected(e) {
 
 async function transcribeAudioFile() {
   if (!audioBlob) return;
-
-  // Usa Web Speech API com o áudio tocando (método alternativo gratuito)
-  // Para arquivos, usamos a API de reconhecimento via playback + microfone
-  showToast('Reproduza o áudio em voz alta próximo ao microfone para transcrever, ou use a gravação direta.');
-
-  // Alternativa: inicia gravação enquanto áudio toca
-  $('audioElement').play();
-  await startRecording();
-
-  $('audioElement').onended = () => {
-    setTimeout(stopRecording, 1000);
-  };
+  const btn = $('btnTranscribeFile');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-round spinning">sync</span> Transcrevendo...'; }
+  showToast('Transcrevendo com Whisper AI...');
+  await transcribeWithWhisper(audioBlob);
+  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-icons-round">transcribe</span> Transcrever áudio'; }
 }
 
 function showAudioResult(text, lang) {
