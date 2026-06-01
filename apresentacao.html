@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Scribble Converter — Apresentação</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --navy:#0D1B2A;
+  --blue:#1565C0;
+  --blue2:#1E88E5;
+  --cyan:#00B4D8;
+  --gold:#FFD700;
+  --green:#00C853;
+  --red:#F44336;
+  --purple:#9C27B0;
+  --white:#fff;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--white);overflow-x:hidden;}
+
+/* ===== HERO ===== */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 24px;
+  background:radial-gradient(ellipse at 50% 0%,#1A3050 0%,#0D1B2A 70%);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231565C0' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity:.5;
+}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.3);
+  border-radius:99px;padding:8px 20px;font-size:13px;font-weight:700;
+  color:var(--gold);margin-bottom:32px;letter-spacing:.5px;
+  animation:fadeDown .8s ease;
+}
+.hero-icon{
+  width:100px;height:100px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border-radius:28px;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 32px;box-shadow:0 20px 60px rgba(0,180,216,.4);
+  font-size:52px;animation:scaleIn .8s ease .2s both;
+}
+.hero h1{
+  font-size:clamp(36px,8vw,72px);font-weight:900;line-height:1.1;
+  letter-spacing:-2px;margin-bottom:16px;
+  animation:fadeUp .8s ease .3s both;
+}
+.hero h1 span{
+  background:linear-gradient(135deg,var(--blue2),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:clamp(16px,3vw,22px);color:rgba(255,255,255,.7);
+  max-width:600px;margin:0 auto 48px;line-height:1.6;
+  animation:fadeUp .8s ease .4s both;
+}
+.hero-btns{
+  display:flex;gap:16px;flex-wrap:wrap;justify-content:center;
+  animation:fadeUp .8s ease .5s both;
+}
+.btn-hero-primary{
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#fff;border:none;border-radius:99px;
+  padding:18px 40px;font-size:17px;font-weight:800;
+  cursor:pointer;text-decoration:none;
+  box-shadow:0 8px 32px rgba(0,180,216,.4);
+  transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:10px;
+}
+.btn-hero-primary:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,180,216,.5);}
+.btn-hero-secondary{
+  background:transparent;color:#fff;
+  border:2px solid rgba(255,255,255,.3);border-radius:99px;
+  padding:18px 40px;font-size:17px;font-weight:700;
+  cursor:pointer;text-decoration:none;transition:border-color .15s,transform .15s;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.btn-hero-secondary:hover{border-color:var(--cyan);transform:translateY(-3px);}
+
+.hero-scroll{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:rgba(255,255,255,.4);font-size:12px;animation:bounce 2s infinite;
+}
+.hero-scroll::after{content:'↓';font-size:20px;}
+
+/* ===== STATS ===== */
+.stats{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:0;
+  background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.stat{
+  flex:1;min-width:150px;padding:40px 24px;text-align:center;
+  border-right:1px solid rgba(255,255,255,.08);
+}
+.stat:last-child{border-right:none;}
+.stat-num{font-size:42px;font-weight:900;background:linear-gradient(135deg,var(--blue2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-lbl{font-size:13px;color:rgba(255,255,255,.5);margin-top:6px;}
+
+/* ===== FEATURES ===== */
+.section{padding:100px 24px;max-width:1100px;margin:0 auto;}
+.section-tag{
+  display:inline-block;background:rgba(30,136,229,.15);
+  color:var(--blue2);border-radius:99px;padding:6px 18px;
+  font-size:13px;font-weight:700;letter-spacing:.5px;margin-bottom:16px;
+}
+.section h2{font-size:clamp(28px,5vw,48px);font-weight:900;letter-spacing:-1px;margin-bottom:16px;}
+.section-sub{font-size:18px;color:rgba(255,255,255,.6);max-width:600px;line-height:1.6;margin-bottom:64px;}
+
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.feature-card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;padding:28px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.feature-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.03));
+  opacity:0;transition:opacity .2s;
+}
+.feature-card:hover{transform:translateY(-6px);border-color:rgba(0,180,216,.4);box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.feature-card:hover::before{opacity:1;}
+.feature-icon{
+  width:56px;height:56px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:20px;
+}
+.feature-icon.blue  {background:rgba(30,136,229,.2);}
+.feature-icon.cyan  {background:rgba(0,180,216,.2);}
+.feature-icon.green {background:rgba(0,200,83,.15);}
+.feature-icon.purple{background:rgba(156,39,176,.2);}
+.feature-icon.gold  {background:rgba(255,215,0,.15);}
+.feature-icon.red   {background:rgba(244,67,54,.15);}
+.feature-card h3{font-size:20px;font-weight:800;margin-bottom:10px;}
+.feature-card p{font-size:14px;color:rgba(255,255,255,.6);line-height:1.7;}
+.feature-tag{
+  display:inline-block;margin-top:14px;
+  font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;
+  background:rgba(0,180,216,.15);color:var(--cyan);
+}
+
+/* ===== DEMO VISUAL ===== */
+.demo-section{
+  background:linear-gradient(135deg,#0A1520,#112236);
+  padding:100px 24px;text-align:center;
+}
+.demo-phone{
+  width:280px;margin:0 auto;
+  background:#0D1B2A;border-radius:40px;
+  border:6px solid rgba(255,255,255,.1);
+  box-shadow:0 40px 120px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.05);
+  overflow:hidden;position:relative;
+}
+.demo-screen{padding:20px 16px;}
+.demo-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.demo-logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;}
+.demo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);}
+.demo-card{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:14px;margin-bottom:12px;text-align:left;
+}
+.demo-card-title{font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.demo-card-text{font-size:11px;color:rgba(255,255,255,.7);line-height:1.6;}
+.demo-btn{
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;
+  text-align:center;margin-top:8px;
+}
+.demo-nav{
+  display:flex;justify-content:space-around;padding:12px 0 4px;
+  border-top:1px solid rgba(255,255,255,.08);
+  font-size:10px;color:rgba(255,255,255,.4);
+}
+.demo-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.demo-nav-item.active{color:var(--cyan);}
+.demo-wave{display:flex;align-items:center;gap:3px;margin:10px 0;}
+.demo-wave span{
+  display:inline-block;width:4px;border-radius:99px;
+  background:var(--red);
+  animation:waveDemo .6s ease-in-out infinite alternate;
+}
+.demo-wave span:nth-child(1){height:12px;animation-delay:0s;}
+.demo-wave span:nth-child(2){height:24px;animation-delay:.1s;}
+.demo-wave span:nth-child(3){height:18px;animation-delay:.2s;}
+.demo-wave span:nth-child(4){height:28px;animation-delay:.3s;}
+.demo-wave span:nth-child(5){height:16px;animation-delay:.4s;}
+@keyframes waveDemo{from{transform:scaleY(.4);}to{transform:scaleY(1);}}
+
+/* ===== COMO FUNCIONA ===== */
+.how-section{padding:100px 24px;background:rgba(255,255,255,.02);}
+.how-steps-big{
+  display:flex;flex-direction:column;gap:0;max-width:700px;margin:0 auto;
+}
+.how-step-big{
+  display:flex;gap:24px;padding:32px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  animation:fadeLeft .6s ease;
+}
+.how-step-big:last-child{border-bottom:none;}
+.how-num-big{
+  width:56px;height:56px;border-radius:16px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:900;flex-shrink:0;
+  box-shadow:0 8px 24px rgba(0,180,216,.3);
+}
+.how-step-big h3{font-size:20px;font-weight:800;margin-bottom:8px;}
+.how-step-big p{font-size:14px;color:rgba(255,255,255,.6);line-height:1.6;}
+
+/* ===== PRICING ===== */
+.pricing-section{padding:100px 24px;text-align:center;}
+.pricing-grid{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;max-width:900px;margin:0 auto;}
+.pricing-card{
+  flex:1;min-width:260px;max-width:380px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;padding:32px;text-align:left;
+  position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.pricing-card:hover{transform:translateY(-6px);box-shadow:0 32px 80px rgba(0,0,0,.5);}
+.pricing-card.featured{
+  border-color:var(--cyan);
+  background:linear-gradient(135deg,rgba(21,101,192,.2),rgba(0,180,216,.1));
+  box-shadow:0 0 60px rgba(0,180,216,.2);
+}
+.pricing-badge-top{
+  position:absolute;top:16px;right:16px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#fff;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:800;
+}
+.pricing-name{font-size:18px;font-weight:800;margin-bottom:8px;}
+.pricing-price{font-size:42px;font-weight:900;margin:16px 0;}
+.pricing-price span{font-size:18px;color:rgba(255,255,255,.6);}
+.pricing-features{list-style:none;margin:24px 0;display:flex;flex-direction:column;gap:10px;}
+.pricing-features li{font-size:14px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:8px;}
+.pricing-features li::before{content:'✓';color:var(--green);font-weight:900;flex-shrink:0;}
+.btn-pricing{
+  width:100%;padding:14px;border-radius:99px;font-size:15px;font-weight:800;
+  border:none;cursor:pointer;text-align:center;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;
+  transition:transform .1s,opacity .15s;
+}
+.btn-pricing:hover{transform:scale(.98);opacity:.9;}
+.btn-pricing.outline{
+  background:transparent;border:2px solid rgba(255,255,255,.2);color:#fff;
+}
+
+/* ===== TESTIMONIAL ===== */
+.quote-section{
+  padding:80px 24px;
+  background:linear-gradient(135deg,rgba(21,101,192,.1),rgba(0,180,216,.05));
+  text-align:center;
+}
+.quote-text{
+  font-size:clamp(20px,4vw,36px);font-weight:300;font-style:italic;
+  max-width:800px;margin:0 auto 24px;line-height:1.5;
+  color:rgba(255,255,255,.9);
+}
+.quote-text strong{color:var(--cyan);font-weight:800;font-style:normal;}
+.quote-author{font-size:14px;color:rgba(255,255,255,.5);}
+
+/* ===== CTA FINAL ===== */
+.cta-section{
+  padding:120px 24px;text-align:center;
+  background:radial-gradient(ellipse at 50% 100%,#1A3050,#0D1B2A);
+}
+.cta-section h2{font-size:clamp(32px,6vw,60px);font-weight:900;letter-spacing:-1.5px;margin-bottom:16px;}
+.cta-section p{font-size:18px;color:rgba(255,255,255,.6);margin-bottom:48px;}
+.cta-trial{font-size:13px;color:rgba(255,255,255,.4);margin-top:16px;}
+
+/* ===== FOOTER ===== */
+footer{
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:40px 24px;text-align:center;
+  font-size:13px;color:rgba(255,255,255,.4);
+}
+footer strong{color:rgba(255,255,255,.7);}
+footer a{color:var(--cyan);text-decoration:none;}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeLeft{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.5);}to{opacity:1;transform:scale(1);}}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-10px);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
+.float{animation:float 3s ease-in-out infinite;}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px){
+  .stat{min-width:50%;}
+  .how-num-big{width:44px;height:44px;font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">✨ Powered by OpenAI Whisper + IA</div>
+  <div class="hero-icon float">✏️</div>
+  <h1>Scribble<br><span>Converter</span></h1>
+  <p class="hero-sub">Transforme documentos manuscritos e áudios de reuniões em texto profissional — em segundos, em qualquer idioma.</p>
+  <div class="hero-btns">
+    <a href="https://nelsonassembler-svg.github.io/scribble-converter" class="btn-hero-primary" target="_blank">
+      🚀 Experimentar grátis
+    </a>
+    <a href="#features" class="btn-hero-secondary">
+      Ver funcionalidades ↓
+    </a>
+  </div>
+  <div class="hero-scroll">Role para descobrir</div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-num">99+</div><div class="stat-lbl">Idiomas suportados</div></div>
+  <div class="stat"><div class="stat-num">99%</div><div class="stat-lbl">Precisão Whisper AI</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">Formatos de exportação</div></div>
+  <div class="stat"><div class="stat-num">2</div><div class="stat-lbl">Dias grátis para testar</div></div>
+</div>
+
+<!-- FEATURES -->
+<div id="features" style="background:#0A1520;padding:20px 0;">
+<div class="section">
+  <div class="section-tag">FUNCIONALIDADES</div>
+  <h2>Tudo que você precisa,<br>num só lugar</h2>
+  <p class="section-sub">Do manuscrito ao arquivo Word. Do áudio ao texto traduzido. Simples assim.</p>
+
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon blue">📷</div>
+      <h3>OCR Inteligente</h3>
+      <p>Fotografe qualquer documento — manuscrito, impresso ou datilografado — e receba o texto digitado instantaneamente com reconhecimento de caligrafia avançado.</p>
+      <span class="feature-tag">Tesseract + IA</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon red">🎙️</div>
+      <h3>Gravar Reuniões e Aulas</h3>
+      <p>Grave áudios em tempo real diretamente pelo celular ou computador. O Whisper AI transcreve com precisão profissional — sem repetições, sem erros.</p>
+      <span class="feature-tag">OpenAI Whisper</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon cyan">📁</div>
+      <h3>Importar Arquivo de Áudio</h3>
+      <p>Envie arquivos MP3, WAV, M4A ou OGG do celular ou computador. A IA transcreve o conteúdo completo com qualidade de estúdio.</p>
+      <span class="feature-tag">MP3 · WAV · M4A · OGG</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon green">🌐</div>
+      <h3>Tradução Automática</h3>
+      <p>Digitalize um texto em inglês, espanhol, francês ou alemão e receba a tradução completa em português do Brasil com um toque.</p>
+      <span class="feature-tag">99 idiomas → PT-BR</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon purple">📄</div>
+      <h3>Exportar Word e Excel</h3>
+      <p>Gere arquivos .docx e .xlsx profissionais com formatação completa, prontos para editar, imprimir ou enviar por e-mail.</p>
+      <span class="feature-tag">.docx · .xlsx</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon gold">☁️</div>
+      <h3>Nuvem Segura</h3>
+      <p>Todos os documentos salvos na nuvem com segurança, acessíveis de qualquer dispositivo a qualquer momento. Sincronização automática.</p>
+      <span class="feature-tag">Supabase · LGPD</span>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- DEMO VISUAL -->
+<div class="demo-section">
+  <div class="section-tag" style="margin-bottom:16px">VEJA NA PRÁTICA</div>
+  <h2 style="font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:48px">O app no seu celular</h2>
+
+  <div class="demo-phone float">
+    <div class="demo-screen">
+      <div class="demo-topbar">
+        <div class="demo-logo">✏️ Scribble Converter</div>
+        <div style="display:flex;gap:4px">
+          <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+          <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+        </div>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-card-title">🎙️ Gravando reunião...</div>
+        <div class="demo-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5)">00:42 · Whisper AI ativo</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-card-title">📄 Transcrição</div>
+        <div class="demo-card-text">"A reunião de hoje tem como pauta a revisão do orçamento do Q3 e aprovação do novo projeto de expansão..."</div>
+      </div>
+
+      <div class="demo-btn">📥 Exportar para Word</div>
+    </div>
+    <div class="demo-nav">
+      <div class="demo-nav-item"><span>🏠</span><span>Início</span></div>
+      <div class="demo-nav-item active"><span>🎙️</span><span>Áudio</span></div>
+      <div class="demo-nav-item"><span>📄</span><span>Docs</span></div>
+      <div class="demo-nav-item"><span>⚙️</span><span>Config</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMO FUNCIONA -->
+<div class="how-section">
+  <div style="max-width:700px;margin:0 auto 0;padding:0 24px;">
+    <div class="section-tag">COMO FUNCIONA</div>
+    <h2 style="font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:48px">Em 3 passos simples</h2>
+  </div>
+  <div class="how-steps-big" style="padding:0 24px;">
+    <div class="how-step-big">
+      <div class="how-num-big">1</div>
+      <div>
+        <h3>Capture ou grave</h3>
+        <p>Fotografe um documento manuscrito, grave uma reunião pelo microfone ou importe um arquivo de áudio MP3/WAV do seu dispositivo.</p>
+      </div>
+    </div>
+    <div class="how-step-big">
+      <div class="how-num-big">2</div>
+      <div>
+        <h3>IA processa tudo</h3>
+        <p>O Whisper AI e o OCR reconhecem o conteúdo com precisão de 99% em mais de 99 idiomas. Tradução automática para português incluída.</p>
+      </div>
+    </div>
+    <div class="how-step-big">
+      <div class="how-num-big">3</div>
+      <div>
+        <h3>Exporte e compartilhe</h3>
+        <p>Receba seu documento em Word (.docx) ou Excel (.xlsx) pronto para editar, salvo na nuvem e acessível de qualquer lugar.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTE -->
+<div class="quote-section">
+  <p class="quote-text">
+    "O único app brasileiro que une <strong>OCR de caligrafia</strong>, <strong>transcrição de áudio com Whisper AI</strong> e <strong>tradução automática</strong> — tudo em um só lugar."
+  </p>
+  <p class="quote-author">Scribble Converter · 2026</p>
+</div>
+
+<!-- PRICING -->
+<div class="pricing-section">
+  <div class="section-tag">PLANOS</div>
+  <h2 style="font-size:clamp(28px,5vw,48px);font-weight:900;margin-bottom:12px">Simples e transparente</h2>
+  <p style="color:rgba(255,255,255,.6);font-size:18px;margin-bottom:64px">Comece grátis por 2 dias. Sem cartão obrigatório.</p>
+
+  <div class="pricing-grid">
+
+    <div class="pricing-card">
+      <div class="pricing-name">👤 Visitante</div>
+      <div class="pricing-price">Grátis<span></span></div>
+      <ul class="pricing-features">
+        <li>5 digitalizações por mês</li>
+        <li>Reconhecimento OCR básico</li>
+        <li>Compartilhar texto</li>
+      </ul>
+      <a href="https://nelsonassembler-svg.github.io/scribble-converter" class="btn-pricing outline" target="_blank">Começar grátis</a>
+    </div>
+
+    <div class="pricing-card featured">
+      <div class="pricing-badge-top">MAIS POPULAR</div>
+      <div class="pricing-name">⭐ Premium Mensal</div>
+      <div class="pricing-price">R$ 34<span>,90/mês</span></div>
+      <ul class="pricing-features">
+        <li>Digitalizações ilimitadas</li>
+        <li>Gravar reuniões e aulas</li>
+        <li>Importar arquivos de áudio</li>
+        <li>Tradução automática PT-BR</li>
+        <li>Exportar Word e Excel</li>
+        <li>Salvar na nuvem</li>
+      </ul>
+      <a href="https://nelsonassembler-svg.github.io/scribble-converter" class="btn-pricing" target="_blank">Assinar agora</a>
+    </div>
+
+    <div class="pricing-card">
+      <div class="pricing-badge-top" style="background:linear-gradient(135deg,#B8860B,#FFD700);color:#000">ECONOMIZE 30%</div>
+      <div class="pricing-name">🌟 Premium Anual</div>
+      <div class="pricing-price">R$ 297<span>,00/ano</span></div>
+      <ul class="pricing-features">
+        <li>Tudo do Premium Mensal</li>
+        <li>Equivale a R$ 24,75/mês</li>
+        <li>Economia de R$ 121,80/ano</li>
+      </ul>
+      <a href="https://nelsonassembler-svg.github.io/scribble-converter" class="btn-pricing" style="background:linear-gradient(135deg,#B8860B,#FFD700);color:#000;" target="_blank">Assinar anual</a>
+    </div>
+
+  </div>
+  <p style="color:rgba(255,255,255,.35);font-size:13px;margin-top:32px">🔒 Pagamento seguro via Stripe · Cancele quando quiser · 2 dias grátis</p>
+</div>
+
+<!-- CTA FINAL -->
+<div class="cta-section">
+  <h2>Pronto para transformar<br>sua produtividade?</h2>
+  <p>Comece agora mesmo. Sem burocracia, sem complicação.</p>
+  <a href="https://nelsonassembler-svg.github.io/scribble-converter" class="btn-hero-primary" target="_blank" style="font-size:20px;padding:22px 56px;">
+    🚀 Começar agora — 2 dias grátis
+  </a>
+  <p class="cta-trial">Sem cartão de crédito nos 2 dias de teste</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p style="font-size:22px;margin-bottom:12px">✏️</p>
+  <p><strong>Scribble Converter</strong></p>
+  <p style="margin-top:8px">Desenvolvido por <strong>Nelson Tomaz Catunda Magalhães</strong></p>
+  <p><a href="mailto:nelsonassembrer@gmail.com">nelsonassembrer@gmail.com</a></p>
+  <p style="margin-top:16px">© 2026 Todos os direitos reservados</p>
+</footer>
+
+</body>
+</html>

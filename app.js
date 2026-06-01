@@ -456,7 +456,7 @@ function openPayment(mode) {
   if (!currentUser) { showToast('Faça login primeiro'); openProfile(); return; }
   stripeMode = mode;
   $('paymentTitle').textContent = mode === 'annual' ? 'Assinar Premium Anual' : 'Assinar Premium';
-  $('paymentPrice').textContent = mode === 'annual' ? 'R$ 167,00/ano' : 'R$ 19,90/mês';
+  $('paymentPrice').textContent = mode === 'annual' ? 'R$ 297,00/ano' : 'R$ 34,90/mês';
   $('paymentSub').textContent   = 'Você será redirecionado para o checkout seguro da Stripe.';
   $('modalPayment').classList.remove('hidden');
 }
