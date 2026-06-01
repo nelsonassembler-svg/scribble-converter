@@ -32,7 +32,7 @@ let scanCount    = 0; // contador de scans do visitante
 /* ===== SETTINGS ===== */
 let settings = {
   lang: 'por', quality: 0.85, format: 'word',
-  theme: 'dark', psm: '6', preprocess: 'on'
+  theme: 'dark', psm: '6', preprocess: 'on', handwriting: 'on'
 };
 
 function loadSettings() {
@@ -52,6 +52,8 @@ function applySettings() {
     b.classList.toggle('active', b.dataset.themeBtn === settings.theme));
   document.querySelectorAll('[data-preprocess]').forEach(b =>
     b.classList.toggle('active', b.dataset.preprocess === settings.preprocess));
+  document.querySelectorAll('[data-handwriting]').forEach(b =>
+    b.classList.toggle('active', b.dataset.handwriting === (settings.handwriting || 'on')));
   outputMode = settings.format;
   document.querySelectorAll('.toggle-btn[data-mode]').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === outputMode));
@@ -283,6 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
     settings.preprocess = btn.dataset.preprocess;
     document.querySelectorAll('[data-preprocess]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); saveSettings();
+  }));
+  document.querySelectorAll('[data-handwriting]').forEach(btn => btn.addEventListener('click', () => {
+    settings.handwriting = btn.dataset.handwriting;
+    document.querySelectorAll('[data-handwriting]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); saveSettings();
+    showToast(settings.handwriting === 'on' ? 'Modo manuscrito ativo' : 'Modo texto impresso ativo');
   }));
   document.querySelectorAll('[data-theme-btn]').forEach(btn => btn.addEventListener('click', () => {
     settings.theme = btn.dataset.themeBtn;
@@ -628,18 +636,50 @@ function preprocessImage(blob) {
   return new Promise(resolve => {
     const img = new Image(), url = URL.createObjectURL(blob);
     img.onload = () => {
-      const scale = Math.max(1, 1800 / img.naturalWidth);
+      const isHandwriting = settings.handwriting === 'on';
+
+      // Escala maior para manuscritos (mais detalhe nas letras)
+      const minWidth = isHandwriting ? 2400 : 1800;
+      const scale = Math.max(1, minWidth / img.naturalWidth);
+
       const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth * scale; canvas.height = img.naturalHeight * scale;
+      canvas.width  = img.naturalWidth  * scale;
+      canvas.height = img.naturalHeight * scale;
       const ctx = canvas.getContext('2d');
+
+      // Renderiza com suavização
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const id = ctx.getImageData(0, 0, canvas.width, canvas.height), d = id.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-        const contrast = 1.8, factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-        let enhanced = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
-        d[i] = d[i+1] = d[i+2] = enhanced > 140 ? 255 : 0;
+
+      const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d  = id.data;
+
+      if (isHandwriting) {
+        // MODO MANUSCRITO: preserva traços, aumenta contraste suavemente
+        for (let i = 0; i < d.length; i += 4) {
+          // Converte para escala de cinza
+          const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+          // Aumenta contraste suavemente (não binariza)
+          const contrast = 2.2;
+          const factor   = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+          let enhanced   = factor * (gray - 128) + 128;
+          enhanced       = Math.max(0, Math.min(255, enhanced));
+          // Limiar adaptativo mais suave (preserva traços finos)
+          const val = enhanced < 180 ? Math.max(0, enhanced - 20) : 255;
+          d[i] = d[i+1] = d[i+2] = val;
+        }
+      } else {
+        // MODO IMPRESSO: binarização agressiva (ideal para texto tipográfico)
+        for (let i = 0; i < d.length; i += 4) {
+          const gray    = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+          const contrast = 1.8;
+          const factor   = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+          let enhanced   = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
+          d[i] = d[i+1] = d[i+2] = enhanced > 140 ? 255 : 0;
+        }
       }
+
       ctx.putImageData(id, 0, 0);
       canvas.toBlob(p => { URL.revokeObjectURL(url); resolve(p); }, 'image/png');
     };
@@ -668,7 +708,14 @@ async function runOCR() {
         } else { $('progressStatus').textContent = m.status; }
       }
     });
-    await worker.setParameters({ tessedit_pageseg_mode: settings.psm, preserve_interword_spaces: '1' });
+    const isHandwriting = settings.handwriting === 'on';
+    await worker.setParameters({
+      tessedit_pageseg_mode:     isHandwriting ? '6' : settings.psm,
+      preserve_interword_spaces: '1',
+      tessedit_do_invert:        '0',
+      language_model_penalty_non_freq_dict_word: isHandwriting ? '0.5' : '0.1',
+      language_model_penalty_non_dict_word:      isHandwriting ? '0.5' : '0.15',
+    });
     const { data: { text } } = await worker.recognize(processed);
     await worker.terminate();
     ocrResult = cleanOcrText(text);
