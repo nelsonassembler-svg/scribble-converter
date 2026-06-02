@@ -2,68 +2,78 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY') ?? ''
 
-const corsHeaders = {
+const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const formData  = await req.formData()
-    const imageFile = formData.get('image') as File
-    const language  = (formData.get('language') as string) || 'pt'
-    const translate = (formData.get('translate') as string) === 'true'
+    const contentType = req.headers.get('content-type') || ''
 
-    if (!imageFile) {
-      return new Response(JSON.stringify({ error: 'Nenhuma imagem enviada' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    let imageBase64 = ''
+    let mimeType    = 'image/jpeg'
+    let language    = 'pt'
+    let translate   = false
+
+    if (contentType.includes('multipart/form-data')) {
+      const form  = await req.formData()
+      const file  = form.get('audio') as File ?? form.get('image') as File
+
+      if (!file) throw new Error('Nenhum arquivo recebido')
+
+      language  = (form.get('language') as string) || 'pt'
+      translate = (form.get('translate') as string) === 'true'
+      mimeType  = file.type || 'image/jpeg'
+
+      // Converte para base64
+      const buf  = await file.arrayBuffer()
+      const arr  = new Uint8Array(buf)
+      let binary = ''
+      for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i])
+      imageBase64 = btoa(binary)
+
+    } else {
+      // JSON fallback
+      const body  = await req.json()
+      imageBase64 = body.image
+      language    = body.language || 'pt'
+      translate   = body.translate || false
+      mimeType    = body.mimeType || 'image/jpeg'
     }
 
-    // Converte a imagem para base64
-    const arrayBuffer = await imageFile.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-    const mimeType = imageFile.type || 'image/jpeg'
+    if (!imageBase64) throw new Error('Imagem inválida ou vazia')
 
-    // Monta o prompt conforme idioma e tradução
-    const langName: Record<string, string> = {
-      'pt': 'português', 'en': 'inglês', 'es': 'espanhol',
-      'fr': 'francês', 'de': 'alemão', 'it': 'italiano'
+    // Monta o prompt
+    const langMap: Record<string, string> = {
+      pt: 'português', en: 'inglês', es: 'espanhol',
+      fr: 'francês',   de: 'alemão', it: 'italiano', ja: 'japonês'
     }
-    const sourceLang = langName[language] || language
+    const srcLang = langMap[language] || language
 
-    let prompt = ''
-    if (translate) {
-      prompt = `Você é um especialista em leitura de caligrafia e tradução.
-Transcreva TODO o texto manuscrito desta imagem — incluindo texto cursivo, letra de forma, anotações e qualquer texto visível.
-Em seguida, traduza o texto transcrito para o português do Brasil.
+    const prompt = translate
+      ? `Você é um especialista em leitura de caligrafia manuscrita e tradução.
+Analise esta imagem e:
+1. Transcreva TODO o texto visível (manuscrito, impresso, anotações)
+2. Traduza para português do Brasil
 
-Formato da resposta:
-TRANSCRIÇÃO ORIGINAL:
-[texto transcrito]
+Responda neste formato:
+TRANSCRIÇÃO:
+[texto original]
 
 TRADUÇÃO EM PORTUGUÊS:
-[texto traduzido]
-
-Seja preciso, preserve a estrutura original (parágrafos, listas, tópicos).`
-    } else {
-      prompt = `Você é um especialista em leitura de caligrafia manuscrita em ${sourceLang}.
-Transcreva TODO o texto manuscrito desta imagem com máxima fidelidade.
-Inclua: texto cursivo, letra de forma, anotações, tópicos, listas — qualquer texto visível.
-
-Regras:
-- Preserve a estrutura original (parágrafos, tópicos com bullet points, listas)
-- Se uma palavra for ilegível, use [?] no lugar
-- Não adicione comentários, apenas o texto transcrito
-- Mantenha a pontuação original`
-    }
+[texto traduzido]`
+      : `Você é um especialista em leitura de caligrafia manuscrita em ${srcLang}.
+Transcreva TODO o texto visível nesta imagem com máxima fidelidade.
+- Preserve parágrafos, tópicos e estrutura original
+- Para palavras ilegíveis use [?]
+- Responda APENAS com o texto transcrito, sem comentários adicionais`
 
     // Chama GPT-4o Vision
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_KEY}`,
@@ -76,37 +86,29 @@ Regras:
           role: 'user',
           content: [
             { type: 'text', text: prompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64}`,
-                detail: 'high'  // máxima qualidade de análise
-              }
-            }
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}`, detail: 'high' } }
           ]
         }]
       })
     })
 
-    if (!response.ok) {
-      const err = await response.text()
-      console.error('OpenAI error:', err)
-      return new Response(JSON.stringify({ error: 'Erro no GPT-4o Vision: ' + err }), {
-        status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    if (!resp.ok) {
+      const errBody = await resp.text()
+      console.error('OpenAI error:', resp.status, errBody)
+      throw new Error(`OpenAI ${resp.status}: ${errBody.slice(0, 200)}`)
     }
 
-    const data = await response.json()
-    const text = data.choices?.[0]?.message?.content?.trim() || ''
+    const result = await resp.json()
+    const text   = result.choices?.[0]?.message?.content?.trim() || ''
 
     return new Response(JSON.stringify({ text }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...cors, 'Content-Type': 'application/json' }
     })
 
   } catch (err) {
-    console.error('Erro:', err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.error('Edge Function error:', err)
+    return new Response(JSON.stringify({ error: String(err.message || err) }), {
+      status: 500, headers: { ...cors, 'Content-Type': 'application/json' }
     })
   }
 })
