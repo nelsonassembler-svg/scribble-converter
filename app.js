@@ -571,57 +571,142 @@ $('modalScan').addEventListener('click', e => { if (e.target === $('modalScan'))
 function closeScanModal() { $('modalScan').classList.add('hidden'); resetCameraStream(); }
 
 /* ===== CÂMERA ===== */
+let cameraStream    = null;
+let originalImgBlob = null; // blob original para re-aplicar ajustes
+
+// Botão câmera — alterna entre iniciar e capturar
 $('btnCamera').addEventListener('click', async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const video  = $('cameraStream');
-    video.srcObject = stream; video.classList.remove('hidden');
-    $('scanPlaceholder').classList.add('hidden'); $('previewImg').classList.add('hidden');
-    const oldHtml  = $('btnCamera').innerHTML;
-    const oldClick = $('btnCamera').onclick;
-    $('btnCamera').innerHTML = '<span class="material-icons-round">camera</span> Capturar';
-    $('btnCamera').onclick = () => {
-      const canvas = $('cameraCanvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      canvas.toBlob(blob => {
-        stream.getTracks().forEach(t => t.stop());
-        video.classList.add('hidden');
-        setPreviewBlob(blob);
-        $('btnCamera').innerHTML  = oldHtml;
-        $('btnCamera').onclick    = oldClick;
-      }, 'image/jpeg', settings.quality);
-    };
-  } catch { showToast('Câmera não disponível — use Galeria'); $('galleryInput').click(); }
+  if (cameraStream) {
+    // Já está ativa → CAPTURAR
+    captureFromCamera();
+  } else {
+    // Inicia a câmera
+    await startCamera();
+  }
 });
 
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    const video = $('cameraStream');
+    video.srcObject = cameraStream;
+    video.classList.remove('hidden');
+    $('scanPlaceholder').classList.add('hidden');
+    $('previewImg').classList.add('hidden');
+    $('scanGuide').classList.remove('hidden');
+    $('imgAdjustments').classList.add('hidden');
+    $('btnCamera').innerHTML = '<span class="material-icons-round">camera</span> Capturar foto';
+    $('btnCamera').style.background = 'linear-gradient(135deg,#F44336,#E53935)';
+  } catch {
+    cameraStream = null;
+    showToast('Câmera indisponível — usando Galeria');
+    $('galleryInput').click();
+  }
+}
+
+function captureFromCamera() {
+  if (!cameraStream) return;
+  const video  = $('cameraStream');
+  const canvas = $('cameraCanvas');
+  canvas.width  = video.videoWidth  || 1280;
+  canvas.height = video.videoHeight || 720;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    stopCamera();
+    setPreviewBlob(blob);
+  }, 'image/jpeg', 0.95);
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  $('cameraStream').classList.add('hidden');
+  $('cameraStream').srcObject = null;
+  $('scanGuide').classList.add('hidden');
+  $('btnCamera').innerHTML = '<span class="material-icons-round">photo_camera</span>Câmera';
+  $('btnCamera').style.background = '';
+}
+
 $('btnUpload').addEventListener('click', () => $('galleryInput').click());
-$('galleryInput').addEventListener('change', e => { if (e.target.files[0]) setPreviewBlob(e.target.files[0]); e.target.value = ''; });
+$('galleryInput').addEventListener('change', e => {
+  if (e.target.files[0]) { stopCamera(); setPreviewBlob(e.target.files[0]); }
+  e.target.value = '';
+});
+
+// Ajustes de imagem
+function setupAdjustments() {
+  ['adjBrightness', 'adjContrast', 'adjRotation'].forEach(id => {
+    $(id)?.addEventListener('input', applyAdjustments);
+  });
+  $('btnAdjReset')?.addEventListener('click', () => {
+    $('adjBrightness').value = '1';
+    $('adjContrast').value   = '1';
+    $('adjRotation').value   = '0';
+    applyAdjustments();
+  });
+}
+
+function applyAdjustments() {
+  if (!originalImgBlob) return;
+  const brightness = parseFloat($('adjBrightness')?.value || '1');
+  const contrast   = parseFloat($('adjContrast')?.value   || '1');
+  const rotation   = parseInt($('adjRotation')?.value     || '0');
+
+  const imgEl = new Image();
+  imgEl.onload = () => {
+    const rad  = rotation * Math.PI / 180;
+    const sin  = Math.abs(Math.sin(rad));
+    const cos  = Math.abs(Math.cos(rad));
+    const w    = imgEl.naturalWidth;
+    const h    = imgEl.naturalHeight;
+    const nw   = Math.round(w * cos + h * sin);
+    const nh   = Math.round(w * sin + h * cos);
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = nw;
+    canvas.height = nh;
+    const ctx = canvas.getContext('2d');
+    ctx.filter = `brightness(${brightness}) contrast(${contrast})`;
+    ctx.translate(nw/2, nh/2);
+    ctx.rotate(rad);
+    ctx.drawImage(imgEl, -w/2, -h/2);
+
+    canvas.toBlob(blob => {
+      currentImage = blob;
+      $('previewImg').src = URL.createObjectURL(blob);
+    }, 'image/jpeg', 0.95);
+  };
+  imgEl.src = URL.createObjectURL(originalImgBlob);
+}
 
 function setPreviewBlob(blob) {
-  const img = new Image(), url = URL.createObjectURL(blob);
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    canvas.toBlob(compressed => {
-      currentImage = compressed;
-      $('previewImg').src = URL.createObjectURL(compressed);
-      $('previewImg').classList.remove('hidden');
-      $('scanPlaceholder').classList.add('hidden');
-      $('cameraStream').classList.add('hidden');
-      $('btnRecognize').disabled = false;
-    }, 'image/jpeg', settings.quality);
-    URL.revokeObjectURL(url);
-  };
-  img.src = url;
+  originalImgBlob = blob;
+  currentImage    = blob;
+  const url = URL.createObjectURL(blob);
+  $('previewImg').src = url;
+  $('previewImg').classList.remove('hidden');
+  $('scanPlaceholder').classList.add('hidden');
+  $('cameraStream').classList.add('hidden');
+  $('btnRecognize').disabled = false;
+  $('imgAdjustments').classList.remove('hidden');
+  $('scanGuide').classList.add('hidden');
+  // Reseta sliders
+  if ($('adjBrightness')) $('adjBrightness').value = '1';
+  if ($('adjContrast'))   $('adjContrast').value   = '1';
+  if ($('adjRotation'))   $('adjRotation').value   = '0';
 }
 
 function resetCameraStream() {
-  const v = $('cameraStream');
-  if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
-  v.classList.add('hidden');
+  stopCamera();
+  originalImgBlob = null;
+  $('imgAdjustments')?.classList.add('hidden');
 }
+
+document.addEventListener('DOMContentLoaded', setupAdjustments);
 
 /* ===== TOGGLE MODO ===== */
 document.querySelectorAll('.toggle-btn[data-mode]').forEach(btn => {

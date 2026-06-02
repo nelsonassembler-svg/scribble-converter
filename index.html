@@ -885,11 +885,39 @@
       <video id="cameraStream" autoplay playsinline class="hidden"></video>
       <canvas id="cameraCanvas" class="hidden"></canvas>
       <img id="previewImg" class="hidden" alt="preview" />
+      <div class="scan-guide hidden" id="scanGuide">
+        <div class="guide-corner tl"></div>
+        <div class="guide-corner tr"></div>
+        <div class="guide-corner bl"></div>
+        <div class="guide-corner br"></div>
+        <div class="guide-hint">Enquadre o documento aqui</div>
+      </div>
       <div class="scan-placeholder" id="scanPlaceholder">
         <span class="material-icons-round">image_search</span>
-        <p>Nenhuma imagem selecionada</p>
+        <p>Toque em Câmera ou Galeria</p>
       </div>
     </div>
+
+    <!-- AJUSTES DE IMAGEM (aparecem após selecionar foto) -->
+    <div class="img-adjustments hidden" id="imgAdjustments">
+      <div class="adj-row">
+        <span class="material-icons-round adj-icon">wb_sunny</span>
+        <label>Brilho</label>
+        <input type="range" id="adjBrightness" min="0.5" max="2" step="0.05" value="1" class="adj-slider" />
+      </div>
+      <div class="adj-row">
+        <span class="material-icons-round adj-icon">contrast</span>
+        <label>Contraste</label>
+        <input type="range" id="adjContrast" min="0.5" max="3" step="0.05" value="1" class="adj-slider" />
+      </div>
+      <div class="adj-row">
+        <span class="material-icons-round adj-icon">rotate_right</span>
+        <label>Rotação</label>
+        <input type="range" id="adjRotation" min="-15" max="15" step="1" value="0" class="adj-slider" />
+      </div>
+      <button class="btn-ghost adj-reset" id="btnAdjReset">↺ Resetar</button>
+    </div>
+
     <div class="scan-options">
       <button class="scan-opt-btn" id="btnCamera">
         <span class="material-icons-round">photo_camera</span>Câmera

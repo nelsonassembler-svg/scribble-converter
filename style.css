@@ -1258,6 +1258,43 @@ html, body {
   margin: 16px 0 4px;
 }
 
+/* ===== GUIAS DE ENQUADRAMENTO ===== */
+.scan-guide {
+  position: absolute; inset: 12px;
+  pointer-events: none; z-index: 2;
+}
+.guide-corner {
+  position: absolute; width: 24px; height: 24px;
+  border-color: var(--cyan); border-style: solid;
+}
+.guide-corner.tl { top:0; left:0;  border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.guide-corner.tr { top:0; right:0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.guide-corner.bl { bottom:0; left:0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.guide-corner.br { bottom:0; right:0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+.guide-hint {
+  position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--cyan); white-space: nowrap; font-weight: 600;
+}
+
+/* ===== AJUSTES DE IMAGEM ===== */
+.img-adjustments {
+  background: rgba(0,0,0,.3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.adj-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.adj-icon { font-size: 18px; color: var(--blue-glow); flex-shrink: 0; }
+.adj-row label { font-size: 12px; color: var(--white-70); width: 60px; flex-shrink: 0; }
+.adj-slider {
+  flex: 1; accent-color: var(--blue-light); height: 4px; cursor: pointer;
+}
+.adj-reset {
+  font-size: 12px; padding: 4px 0; color: var(--white-40);
+  align-self: flex-end;
+}
+
 /* ===== INSTALL BANNER ===== */
 .install-banner {
   position: fixed;
