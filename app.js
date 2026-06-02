@@ -70,6 +70,13 @@ function checkPremium(user) {
   isPremium = meta.premium === true || meta.plan === 'premium' || meta.plan === 'annual';
 }
 
+function updateLogoutBtn() {
+  const btn = $('btnLogoutTop');
+  if (!btn) return;
+  if (currentUser) btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
+}
+
 function updatePremiumUI() {
   const chip = $('planChip');
   if (isPremium) {
@@ -367,6 +374,7 @@ async function initSupabase() {
     checkPremium(currentUser);
     updatePremiumUI();
     updateAdminUI();
+    updateLogoutBtn();
     renderProfile();
   });
   updatePremiumUI();
@@ -772,48 +780,142 @@ function preprocessImage(blob) {
   });
 }
 
+/* ===== BOTÃO SAIR (topbar) ===== */
+document.addEventListener('DOMContentLoaded', () => {
+  $('btnLogoutTop')?.addEventListener('click', async () => {
+    if (!confirm('Deseja sair da sua conta?')) return;
+    await db.auth.signOut();
+    currentUser = null; isPremium = false;
+    $('btnLogoutTop').classList.add('hidden');
+    updatePremiumUI(); updateAdminUI();
+    showToast('Até logo!');
+    setTimeout(() => showAuthScreen(), 300);
+  });
+
+  // Guias arrastáveis
+  setupDraggableGuides();
+});
+
+function setupDraggableGuides() {
+  const guide   = $('scanGuide');
+  const area    = $('scanPreviewArea');
+  if (!guide || !area) return;
+
+  const corners = { tl: guide.querySelector('.tl'), tr: guide.querySelector('.tr'),
+                    bl: guide.querySelector('.bl'), br: guide.querySelector('.br') };
+
+  let dragging = null, startX, startY, startGuide;
+
+  function getAreaRect() { return area.getBoundingClientRect(); }
+
+  function onStart(e, corner) {
+    dragging = corner;
+    const touch = e.touches?.[0] || e;
+    startX = touch.clientX; startY = touch.clientY;
+    startGuide = { top: guide.offsetTop, left: guide.offsetLeft,
+                   right: parseInt(guide.style.right || '12'),
+                   bottom: parseInt(guide.style.bottom || '12') };
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const touch = e.touches?.[0] || e;
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    const ar = getAreaRect();
+    const minSize = 60;
+
+    if (dragging === 'tl') {
+      guide.style.left = Math.max(0, Math.min(startGuide.left + dx, ar.width - minSize - parseInt(guide.style.right||'12'))) + 'px';
+      guide.style.top  = Math.max(0, Math.min(startGuide.top  + dy, ar.height - minSize - parseInt(guide.style.bottom||'12'))) + 'px';
+    } else if (dragging === 'tr') {
+      guide.style.right = Math.max(0, Math.min(startGuide.right - dx, ar.width - minSize - parseInt(guide.style.left||'12'))) + 'px';
+      guide.style.top   = Math.max(0, Math.min(startGuide.top + dy, ar.height - minSize - parseInt(guide.style.bottom||'12'))) + 'px';
+    } else if (dragging === 'bl') {
+      guide.style.left   = Math.max(0, Math.min(startGuide.left + dx, ar.width - minSize - parseInt(guide.style.right||'12'))) + 'px';
+      guide.style.bottom = Math.max(0, Math.min(startGuide.bottom - dy, ar.height - minSize - parseInt(guide.style.top||'12'))) + 'px';
+    } else if (dragging === 'br') {
+      guide.style.right  = Math.max(0, Math.min(startGuide.right - dx, ar.width - minSize - parseInt(guide.style.left||'12'))) + 'px';
+      guide.style.bottom = Math.max(0, Math.min(startGuide.bottom - dy, ar.height - minSize - parseInt(guide.style.top||'12'))) + 'px';
+    }
+    e.preventDefault();
+  }
+
+  function onEnd() { dragging = null; }
+
+  Object.entries(corners).forEach(([name, el]) => {
+    if (!el) return;
+    el.addEventListener('mousedown',  e => onStart(e, name));
+    el.addEventListener('touchstart', e => onStart(e, name), { passive: false });
+  });
+  document.addEventListener('mousemove',  onMove);
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mouseup',    onEnd);
+  document.addEventListener('touchend',   onEnd);
+}
+
 /* ===== OCR com GPT-4o Vision ===== */
 const OCR_VISION_URL = 'https://cklxdvlkagwyzzmxdmpm.supabase.co/functions/v1/ocr-vision';
 
 $('btnRecognize').addEventListener('click', runOCR);
 
 async function runOCR() {
-  if (!currentImage) return;
+  if (!currentImage) { showToast('Selecione uma imagem primeiro'); return; }
+
+  // Guarda referência do blob ANTES de fechar o modal
+  const imgToProcess = currentImage;
+
   closeScanModal();
+
   $('modalProgress').classList.remove('hidden');
-  $('progressFill').style.width = '30%';
-  $('progressPct').textContent  = '30%';
+  $('progressFill').style.width = '20%';
+  $('progressPct').textContent  = '20%';
   $('progressStatus').textContent = 'Enviando para GPT-4o Vision...';
 
   try {
-    // Detecta se precisa traduzir
     const langCode  = settings.lang === 'por' ? 'pt' : settings.lang.substring(0, 2);
-    const translate = langCode !== 'pt'; // traduz para PT se não for português
+    const translate = langCode !== 'pt';
 
     const form = new FormData();
-    form.append('image',     currentImage, 'documento.jpg');
+    form.append('image',     imgToProcess, 'documento.jpg');
     form.append('language',  langCode);
     form.append('translate', String(translate));
 
-    $('progressFill').style.width = '60%';
-    $('progressPct').textContent  = '60%';
+    $('progressFill').style.width = '50%';
+    $('progressPct').textContent  = '50%';
     $('progressStatus').textContent = 'GPT-4o lendo a caligrafia...';
 
-    const res  = await fetch(OCR_VISION_URL, { method: 'POST', body: form });
+    const res = await fetch(OCR_VISION_URL, { method: 'POST', body: form });
+
+    $('progressFill').style.width = '80%';
+    $('progressPct').textContent  = '80%';
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Erro ${res.status}: ${errText}`);
+    }
+
     const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    ocrResult     = data.text?.trim() || '';
+    currentImage  = imgToProcess; // restaura para exibir preview
 
     $('progressFill').style.width = '100%';
     $('progressPct').textContent  = '100%';
+    $('progressStatus').textContent = 'Concluído!';
 
-    if (data.error) throw new Error(data.error);
-
-    ocrResult = data.text?.trim() || '';
-    $('modalProgress').classList.add('hidden');
-    showOcrCard();
+    setTimeout(() => {
+      $('modalProgress').classList.add('hidden');
+      showOcrCard();
+    }, 400);
 
   } catch (err) {
     $('modalProgress').classList.add('hidden');
+    currentImage = imgToProcess; // restaura mesmo em caso de erro
     showToast('Erro no OCR: ' + err.message);
+    console.error('OCR Error:', err);
   }
 }
 
