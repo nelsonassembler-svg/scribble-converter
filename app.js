@@ -687,41 +687,49 @@ function preprocessImage(blob) {
   });
 }
 
-/* ===== OCR ===== */
+/* ===== OCR com GPT-4o Vision ===== */
+const OCR_VISION_URL = 'https://cklxdvlkagwyzzmxdmpm.supabase.co/functions/v1/ocr-vision';
+
 $('btnRecognize').addEventListener('click', runOCR);
 
 async function runOCR() {
   if (!currentImage) return;
   closeScanModal();
   $('modalProgress').classList.remove('hidden');
-  $('progressFill').style.width = '0%'; $('progressPct').textContent = '0%';
-  $('progressStatus').textContent = 'Preparando imagem...';
+  $('progressFill').style.width = '30%';
+  $('progressPct').textContent  = '30%';
+  $('progressStatus').textContent = 'Enviando para GPT-4o Vision...';
+
   try {
-    const processed = settings.preprocess === 'on' ? await preprocessImage(currentImage) : currentImage;
-    $('progressStatus').textContent = 'Iniciando OCR...';
-    const worker = await Tesseract.createWorker(settings.lang, 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round(m.progress * 100);
-          $('progressFill').style.width = pct + '%'; $('progressPct').textContent = pct + '%';
-          $('progressStatus').textContent = 'Reconhecendo texto...';
-        } else { $('progressStatus').textContent = m.status; }
-      }
-    });
-    const isHandwriting = settings.handwriting === 'on';
-    await worker.setParameters({
-      tessedit_pageseg_mode:     isHandwriting ? '6' : settings.psm,
-      preserve_interword_spaces: '1',
-      tessedit_do_invert:        '0',
-      language_model_penalty_non_freq_dict_word: isHandwriting ? '0.5' : '0.1',
-      language_model_penalty_non_dict_word:      isHandwriting ? '0.5' : '0.15',
-    });
-    const { data: { text } } = await worker.recognize(processed);
-    await worker.terminate();
-    ocrResult = cleanOcrText(text);
+    // Detecta se precisa traduzir
+    const langCode  = settings.lang === 'por' ? 'pt' : settings.lang.substring(0, 2);
+    const translate = langCode !== 'pt'; // traduz para PT se não for português
+
+    const form = new FormData();
+    form.append('image',     currentImage, 'documento.jpg');
+    form.append('language',  langCode);
+    form.append('translate', String(translate));
+
+    $('progressFill').style.width = '60%';
+    $('progressPct').textContent  = '60%';
+    $('progressStatus').textContent = 'GPT-4o lendo a caligrafia...';
+
+    const res  = await fetch(OCR_VISION_URL, { method: 'POST', body: form });
+    const data = await res.json();
+
+    $('progressFill').style.width = '100%';
+    $('progressPct').textContent  = '100%';
+
+    if (data.error) throw new Error(data.error);
+
+    ocrResult = data.text?.trim() || '';
     $('modalProgress').classList.add('hidden');
     showOcrCard();
-  } catch (err) { $('modalProgress').classList.add('hidden'); showToast('Erro no OCR: ' + err.message); }
+
+  } catch (err) {
+    $('modalProgress').classList.add('hidden');
+    showToast('Erro no OCR: ' + err.message);
+  }
 }
 
 function cleanOcrText(raw) {
