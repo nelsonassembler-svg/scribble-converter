@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ntechia.scribbleconverter",
+    "sha256_cert_fingerprints": ["C9:CE:84:10:45:62:97:9C:65:5F:C1:D5:73:4A:84:2E:A4:6C:EB:A2:D4:A2:1A:C0:78:A3:35:C1:B3:8C:F7:12"]
+  }
+}]
