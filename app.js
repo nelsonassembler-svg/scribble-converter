@@ -531,6 +531,8 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
   $(tabId)?.classList.add('active');
   $('mainContent').scrollTo({ top: 0, behavior: 'smooth' });
+  const footer = $('devFooter');
+  if (footer) footer.style.display = tabId === 'tabHome' ? 'flex' : 'none';
 }
 
 /* ===== SEARCH ===== */
