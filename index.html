@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -930,7 +931,7 @@
       </button>
     </div>
     <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden" />
-    <input type="file" id="galleryInput" accept="image/*" class="hidden" />
+    <input type="file" id="galleryInput" accept="image/*,application/pdf" class="hidden" />
     <div class="scan-mode-row">
       <span class="modal-label">Tipo de saída:</span>
       <div class="toggle-group">

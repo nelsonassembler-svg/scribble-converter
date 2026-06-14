@@ -642,9 +642,50 @@ function stopCamera() {
 }
 
 $('btnUpload').addEventListener('click', () => $('galleryInput').click());
-$('galleryInput').addEventListener('change', e => {
-  if (e.target.files[0]) { stopCamera(); setPreviewBlob(e.target.files[0]); }
+$('galleryInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
   e.target.value = '';
+  if (!file) return;
+  stopCamera();
+  if (file.type === 'application/pdf') {
+    showToast('Convertendo PDF...');
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const totalPages = pdf.numPages;
+      // Renderiza todas as páginas em sequência e concatena verticalmente
+      const canvases = [];
+      let totalHeight = 0, maxWidth = 0;
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width  = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        canvases.push(canvas);
+        totalHeight += viewport.height;
+        maxWidth = Math.max(maxWidth, viewport.width);
+      }
+      // Junta todas as páginas em um único canvas
+      const merged = document.createElement('canvas');
+      merged.width  = maxWidth;
+      merged.height = totalHeight;
+      const ctx = merged.getContext('2d');
+      let offsetY = 0;
+      for (const c of canvases) {
+        ctx.drawImage(c, 0, offsetY);
+        offsetY += c.height;
+      }
+      merged.toBlob(blob => { if (blob) setPreviewBlob(blob); }, 'image/jpeg', 0.92);
+      showToast(`PDF convertido (${totalPages} página${totalPages > 1 ? 's' : ''})`);
+    } catch (err) {
+      showToast('Erro ao ler PDF: ' + err.message);
+    }
+  } else {
+    setPreviewBlob(file);
+  }
 });
 
 // Ajustes de imagem
